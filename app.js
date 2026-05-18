@@ -663,11 +663,8 @@ async function syncDayToSheet(spots) {
     return;
   }
   try {
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode:   'no-cors',
-      body:   JSON.stringify({ updates })
-    });
+    const url = `${APPS_SCRIPT_URL}?data=${encodeURIComponent(JSON.stringify({ updates }))}`;
+    await fetch(url, { mode: 'no-cors' });
     showSyncToast('✅ 已同步至 Google Sheet');
   } catch {
     showSyncToast('❌ 同步失敗，請檢查網路連線');
