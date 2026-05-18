@@ -52,7 +52,7 @@ const ITINERARY = [
         name: '松島海上纜車',
         nameKr: '송도해상케이블카',
         desc: '釜山最長海上纜車，可鳥瞰松島灣全景，透明玻璃底車廂刺激有趣，票價約 ₩15,000',
-        lat: 35.0694, lng: 129.0109,
+        lat: 35.0795, lng: 129.0178,
         budget: { transport: 0, food: 0, ticket: 15000, shopping: 0 }
       },
       {
@@ -79,7 +79,7 @@ const ITINERARY = [
         name: '甘川文化村',
         nameKr: '감천문화마을',
         desc: '韓國最美山坡村落，五彩斑斕的房屋，有「韓國馬丘比丘」之稱，打卡必到',
-        lat: 35.0969, lng: 129.0103,
+        lat: 35.0963, lng: 129.0088,
         budget: { transport: 0, food: 0, ticket: 2000, shopping: 10000 }
       },
       {
@@ -198,7 +198,7 @@ const ITINERARY = [
         name: 'Nasari食堂 晚餐',
         nameKr: '나사리식당',
         desc: '廣安里人氣食堂，以韓式家庭料理著稱，새우장（醬油蝦）及各式小菜豐富，地鐵廣안站步行 13 分',
-        lat: 35.1545, lng: 129.1190,
+        lat: 35.1529, lng: 129.1193,
         budget: { transport: 0, food: 25000, ticket: 0, shopping: 0 }
       },
       {
@@ -364,7 +364,7 @@ const ITINERARY = [
         name: 'Skyline Luge 斜坡滑車',
         nameKr: '스카이라인 루지',
         desc: '刺激好玩的滑道滑車，沿山坡俯衝而下，全程海景相伴，機張海岸人氣體驗項目，約 ₩16,000',
-        lat: 35.2219, lng: 129.2278,
+        lat: 35.2492, lng: 129.2301,
         budget: { transport: 0, food: 0, ticket: 16000, shopping: 0 }
       },
       {
@@ -391,7 +391,7 @@ const ITINERARY = [
         name: '山莊1988 晚餐',
         nameKr: '산장1988 서면본점',
         desc: '西面人氣韓式烤肉店，以特製秘製豬頸肉及各式燒烤聞名，西面站 6 號出口步行 3 分，17:00 開門',
-        lat: 35.1555, lng: 129.0582,
+        lat: 35.1577, lng: 129.0593,
         budget: { transport: 0, food: 35000, ticket: 0, shopping: 0 }
       },
       {
