@@ -536,3 +536,38 @@ footer {
 .popup-name { font-weight: 700; color: var(--navy); font-size: 0.9rem; }
 .popup-kr { font-size: 0.75rem; color: var(--gray); margin-bottom: 0.3rem; }
 .popup-desc { font-size: 0.8rem; color: #555; }
+
+/* ── DATA SOURCE BADGE ── */
+.data-badge {
+  font-size: 0.62rem;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 10px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  margin-left: auto;
+  transition: all 0.3s;
+}
+
+.data-badge.loading {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.7);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.data-badge.sheets {
+  background: rgba(52,211,153,0.2);
+  color: #6ee7b7;
+  cursor: default;
+}
+
+.data-badge.local {
+  background: rgba(251,191,36,0.2);
+  color: #fcd34d;
+  cursor: default;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}

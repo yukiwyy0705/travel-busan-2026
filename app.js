@@ -3,6 +3,120 @@ let overviewMap = null;
 const dayMaps = {};
 const dayMapMarkers = {};
 
+// ── Google Sheets 資料來源 ────────────────────────────
+const SHEETS_ID = '1_m9K0y_d-0oc_w1LwWZcpw8EicysazTbh3c65fxaUCY';
+const SHEETS_URL = `https://docs.google.com/spreadsheets/d/${SHEETS_ID}/export?format=csv`;
+
+const TYPE_ZH = {
+  '交通': 'transport', '景點': 'attraction', '餐廳': 'food',
+  '咖啡廳': 'cafe', '海灘': 'beach', '酒店': 'hotel',
+  '購物': 'shopping', '區域': 'area', '寺廟': 'temple'
+};
+
+function parseCSV(text) {
+  const rows = [];
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.replace(/\r$/, '');
+    if (!line.trim()) continue;
+    const cols = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) {
+        cols.push(cur); cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    cols.push(cur);
+    rows.push(cols);
+  }
+  return rows;
+}
+
+function csvToItinerary(csv) {
+  const rows = parseCSV(csv);
+  if (rows.length < 2) return null;
+
+  const headers = rows[0].map(h => h.trim());
+  const get = (row, name) => {
+    const i = headers.indexOf(name);
+    return i >= 0 ? (row[i] || '').trim() : '';
+  };
+
+  const dayMap = {};
+  for (let ri = 1; ri < rows.length; ri++) {
+    const row = rows[ri];
+    if (row.every(c => !c.trim())) continue;
+
+    const dayNum = parseInt(get(row, '天'));
+    if (isNaN(dayNum) || dayNum < 1) continue;
+
+    if (!dayMap[dayNum]) {
+      dayMap[dayNum] = {
+        day: dayNum,
+        date: `Day ${dayNum}`,
+        dateLabel: get(row, '日期'),
+        theme: get(row, '主題'),
+        color: get(row, '主題色') || '#3498db',
+        spots: [],
+        hotel: HOTEL,
+        summary: { transport: 0, food: 0, ticket: 0, shopping: 0, hotel: dayNum < 5 ? 234863 : 0 }
+      };
+    }
+
+    const typeZh = get(row, '類型');
+    const food    = parseInt(get(row, '餐飲費₩'))  || 0;
+    const ticket  = parseInt(get(row, '門票費₩'))  || 0;
+    const shopping = parseInt(get(row, '購物費₩')) || 0;
+
+    dayMap[dayNum].spots.push({
+      time:    get(row, '時間'),
+      type:    TYPE_ZH[typeZh] || typeZh || 'attraction',
+      name:    get(row, '地點名稱'),
+      nameKr:  get(row, '韓文名稱'),
+      desc:    get(row, '描述'),
+      lat:     parseFloat(get(row, '緯度'))  || 0,
+      lng:     parseFloat(get(row, '經度'))  || 0,
+      budget:  { transport: 0, food, ticket, shopping }
+    });
+
+    dayMap[dayNum].summary.food     += food;
+    dayMap[dayNum].summary.ticket   += ticket;
+    dayMap[dayNum].summary.shopping += shopping;
+  }
+
+  const result = Object.values(dayMap).sort((a, b) => a.day - b.day);
+  return result.length ? result : null;
+}
+
+async function fetchFromSheets() {
+  const res = await fetch(SHEETS_URL);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const csv = await res.text();
+  return csvToItinerary(csv);
+}
+
+function setSourceBadge(state) {
+  const el = document.getElementById('data-source-badge');
+  if (!el) return;
+  if (state === 'loading') {
+    el.textContent = '⏳ 同步中...';
+    el.className = 'data-badge loading';
+  } else if (state === 'sheets') {
+    el.textContent = '✅ Google Sheets';
+    el.className = 'data-badge sheets';
+    el.title = '資料從 Google Sheets 即時載入';
+  } else {
+    el.textContent = '📋 本地資料';
+    el.className = 'data-badge local';
+    el.title = '無法連接 Sheets，使用內置資料';
+  }
+}
+
 // ── Uber 車費計算 ─────────────────────────────────────
 const UBER = { base: 4800, perKm: 1100, walkThreshold: 0.45 };
 
@@ -125,6 +239,7 @@ function buildPopup(spot) {
 }
 
 function initOverviewMap() {
+  if (overviewMap) { overviewMap.remove(); overviewMap = null; }
   overviewMap = L.map('overview-map', { zoomControl: true }).setView([35.12, 129.06], 11);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
@@ -147,6 +262,9 @@ function initOverviewMap() {
 }
 
 function initDayMap(mapId, dayData) {
+  const existing = dayMaps[dayData.day];
+  if (existing) { existing.remove(); delete dayMaps[dayData.day]; }
+
   const map = L.map(mapId, { zoomControl: true, scrollWheelZoom: true })
     .setView([dayData.spots[0].lat, dayData.spots[0].lng], 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -169,9 +287,23 @@ function initDayMap(mapId, dayData) {
   return map;
 }
 
+// ── 地圖圖例 ──────────────────────────────────────────
+function renderMapLegend() {
+  const legend = document.getElementById('map-legend');
+  if (!legend) return;
+  legend.innerHTML = '';
+  ITINERARY.forEach(day => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-dot" style="background:${day.color}"></div>${day.date}：${day.theme}`;
+    legend.appendChild(item);
+  });
+}
+
 // ── 行程卡片 ─────────────────────────────────────────
 function renderDayCards() {
   const container = document.getElementById('days-container');
+  container.innerHTML = '';
 
   ITINERARY.forEach((day, di) => {
     const transportKrw = calcDayTransport(day);
@@ -202,12 +334,10 @@ function renderDayCards() {
     const body = document.createElement('div');
     body.className = 'day-body';
 
-    // ── 時間軸 + 路程標籤 ──
     const timeline = document.createElement('div');
     timeline.className = 'timeline';
 
     day.spots.forEach((spot, si) => {
-      // 景點 item
       const item = document.createElement('div');
       item.className = 'timeline-item';
       item.innerHTML = `
@@ -232,7 +362,6 @@ function renderDayCards() {
       });
       timeline.appendChild(item);
 
-      // 路程 pill（景點之後，最後一個不加）
       if (si < day.spots.length - 1) {
         const leg = legs[si];
         const pill = document.createElement('div');
@@ -249,7 +378,6 @@ function renderDayCards() {
 
     body.appendChild(timeline);
 
-    // ── 地圖 + 預算表 ──
     const rightWrap = document.createElement('div');
     rightWrap.className = 'day-map-wrap';
 
@@ -292,7 +420,6 @@ function renderDayCards() {
     table.appendChild(tbody);
     rightWrap.appendChild(table);
 
-    // Uber 費率說明
     const note = document.createElement('div');
     note.className = 'uber-note';
     note.textContent = `起步 ₩4,800 · 每公里 ₩1,100（步行 < ${UBER.walkThreshold * 1000}m 免費）`;
@@ -365,12 +492,33 @@ function updateAllBudgets() {
   });
 }
 
-// ── INIT ─────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+// ── 全頁渲染 ──────────────────────────────────────────
+function renderAll() {
+  renderMapLegend();
   renderDayCards();
   renderTotalBudget();
   initOverviewMap();
   fetchExchangeRate();
+}
+
+// ── INIT ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  setSourceBadge('loading');
+
+  try {
+    const sheetsData = await fetchFromSheets();
+    if (sheetsData) {
+      ITINERARY.splice(0, ITINERARY.length, ...sheetsData);
+      setSourceBadge('sheets');
+    } else {
+      setSourceBadge('local');
+    }
+  } catch (e) {
+    console.warn('Google Sheets 載入失敗，使用本地資料：', e.message);
+    setSourceBadge('local');
+  }
+
+  renderAll();
 
   const sections = document.querySelectorAll('[data-section]');
   const navLinks = document.querySelectorAll('nav a[href^="#"]');
