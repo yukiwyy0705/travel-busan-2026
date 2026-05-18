@@ -6,6 +6,8 @@ const dayMapMarkers = {};
 // ── Google Sheets 資料來源 ────────────────────────────
 const SHEETS_ID = '1_m9K0y_d-0oc_w1LwWZcpw8EicysazTbh3c65fxaUCY';
 const SHEETS_URL = `https://docs.google.com/spreadsheets/d/${SHEETS_ID}/export?format=csv`;
+// 填入 Google Apps Script Web App URL（留空則僅本地更新）
+const APPS_SCRIPT_URL = '';
 
 const TYPE_ZH = {
   '交通': 'transport', '景點': 'attraction', '餐廳': 'food',
@@ -91,6 +93,7 @@ function csvToItinerary(csv) {
     const { lat, lng } = parseCoordsFromGoogleMaps(get(row, 'Google Map 連結'));
 
     dayMap[dayNum].spots.push({
+      rowIndex: ri + 1,
       time:    get(row, '時間'),
       type:    TYPE_ZH[typeZh] || typeZh || 'attraction',
       name:    get(row, '地點名稱'),
@@ -324,7 +327,6 @@ function renderDayCards() {
 
   ITINERARY.forEach((day, di) => {
     const transportKrw = calcDayTransport(day);
-    const legs = calcDayLegs(day);
     const nonTransportTotal = Object.entries(day.summary)
       .filter(([k]) => k !== 'transport')
       .reduce((s, [, v]) => s + v, 0);
@@ -345,6 +347,9 @@ function renderDayCards() {
       </div>
       <div class="day-budget-preview" id="day-preview-${day.day}">
         ${formatKrw(dayTotal)} · HK$--
+      </div>
+      <div class="edit-btn-area" id="edit-btn-area-${day.day}">
+        <button class="edit-btn" onclick="toggleDayEdit(${day.day})">✏️ 編輯</button>
       </div>`;
     card.appendChild(header);
 
@@ -353,45 +358,9 @@ function renderDayCards() {
 
     const timeline = document.createElement('div');
     timeline.className = 'timeline';
+    timeline.id = `timeline-day-${day.day}`;
 
-    day.spots.forEach((spot, si) => {
-      const item = document.createElement('div');
-      item.className = 'timeline-item';
-      item.innerHTML = `
-        <div class="timeline-dot">${SPOT_ICONS[spot.type] || '📍'}</div>
-        <div class="timeline-content">
-          <div class="timeline-time">${spot.time}</div>
-          <div class="timeline-name"><span class="spot-num" style="background:${day.color}">${si + 1}</span> ${spot.name}</div>
-          <div class="timeline-name-kr">${spot.nameKr}</div>
-          ${buildCostBadges(spot)}
-          <div class="timeline-desc">${spot.desc}</div>
-        </div>`;
-      item.addEventListener('click', () => {
-        timeline.querySelectorAll('.timeline-item').forEach(el => el.classList.remove('active'));
-        item.classList.add('active');
-        const map = dayMaps[day.day];
-        const markers = dayMapMarkers[day.day];
-        if (map && markers && markers[si]) {
-          map.flyTo([spot.lat, spot.lng], 16, { animate: true, duration: 0.8 });
-          setTimeout(() => markers[si].openPopup(), 850);
-          document.getElementById(`map-day-${day.day}`).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      });
-      timeline.appendChild(item);
-
-      if (si < day.spots.length - 1) {
-        const leg = legs[si];
-        const pill = document.createElement('div');
-        pill.className = `transport-leg ${leg.walk ? 'walk' : 'uber'}`;
-        if (leg.walk) {
-          pill.innerHTML = `🚶 步行 ${(leg.km * 1000).toFixed(0)}m`;
-        } else {
-          pill.innerHTML = `<span class="leg-icon">🚗</span>Uber ${leg.km.toFixed(1)} km
-            <span class="leg-fare" data-krw="${leg.fare}">${formatKrw(leg.fare)}</span>`;
-        }
-        timeline.appendChild(pill);
-      }
-    });
+    renderTimelineNormalContent(day, timeline);
 
     body.appendChild(timeline);
 
@@ -415,6 +384,7 @@ function renderDayCards() {
     table.className = 'budget-table';
     table.innerHTML = `<thead><tr><th>項目</th><th>KRW</th><th>HKD</th></tr></thead>`;
     const tbody = document.createElement('tbody');
+    tbody.id = `budget-tbody-${day.day}`;
     let rowsHtml = '';
 
     budgetCategories.forEach(cat => {
@@ -448,6 +418,269 @@ function renderDayCards() {
 
     setTimeout(() => initDayMap(`map-day-${day.day}`, day), 0);
   });
+}
+
+// ── 編輯模式 ─────────────────────────────────────────
+const editStates = {};
+let dragSrcIdx = null;
+
+function updateEditBtn(dayNum, isEditing) {
+  const area = document.getElementById(`edit-btn-area-${dayNum}`);
+  if (!area) return;
+  if (isEditing) {
+    area.innerHTML = `
+      <button class="edit-save-btn" onclick="applyAndSaveDayEdit(${dayNum})">✅ 確定</button>
+      <button class="edit-cancel-btn" onclick="cancelDayEdit(${dayNum})">❌ 取消</button>`;
+  } else {
+    area.innerHTML = `<button class="edit-btn" onclick="toggleDayEdit(${dayNum})">✏️ 編輯</button>`;
+  }
+}
+
+function toggleDayEdit(dayNum) {
+  const day = ITINERARY.find(d => d.day === dayNum);
+  if (!day) return;
+  editStates[dayNum] = {
+    active: true,
+    pendingSpots: day.spots.map(s => ({ ...s, budget: { ...s.budget } }))
+  };
+  renderTimelineForDay(dayNum, true);
+  updateEditBtn(dayNum, true);
+}
+
+function cancelDayEdit(dayNum) {
+  editStates[dayNum] = { active: false };
+  renderTimelineForDay(dayNum, false);
+  updateEditBtn(dayNum, false);
+}
+
+function renderTimelineForDay(dayNum, editMode) {
+  const timelineEl = document.getElementById(`timeline-day-${dayNum}`);
+  if (!timelineEl) return;
+  const day = ITINERARY.find(d => d.day === dayNum);
+  if (!day) return;
+  timelineEl.innerHTML = '';
+  if (editMode) {
+    renderTimelineEditContent(day, dayNum, timelineEl);
+  } else {
+    renderTimelineNormalContent(day, timelineEl);
+    updateDayBudgetTable(dayNum);
+  }
+}
+
+function renderTimelineNormalContent(day, timelineEl) {
+  const legs = calcDayLegs(day);
+  day.spots.forEach((spot, si) => {
+    const item = document.createElement('div');
+    item.className = 'timeline-item';
+    item.innerHTML = `
+      <div class="timeline-dot">${SPOT_ICONS[spot.type] || '📍'}</div>
+      <div class="timeline-content">
+        <div class="timeline-time">${spot.time}</div>
+        <div class="timeline-name"><span class="spot-num" style="background:${day.color}">${si + 1}</span> ${spot.name}</div>
+        <div class="timeline-name-kr">${spot.nameKr}</div>
+        ${buildCostBadges(spot)}
+        <div class="timeline-desc">${spot.desc}</div>
+      </div>`;
+    item.addEventListener('click', () => {
+      timelineEl.querySelectorAll('.timeline-item').forEach(el => el.classList.remove('active'));
+      item.classList.add('active');
+      const map = dayMaps[day.day];
+      const markers = dayMapMarkers[day.day];
+      if (map && markers && markers[si]) {
+        map.flyTo([spot.lat, spot.lng], 16, { animate: true, duration: 0.8 });
+        setTimeout(() => markers[si].openPopup(), 850);
+        document.getElementById(`map-day-${day.day}`).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+    timelineEl.appendChild(item);
+    if (si < day.spots.length - 1) {
+      const leg = legs[si];
+      const pill = document.createElement('div');
+      pill.className = `transport-leg ${leg.walk ? 'walk' : 'uber'}`;
+      if (leg.walk) {
+        pill.innerHTML = `🚶 步行 ${(leg.km * 1000).toFixed(0)}m`;
+      } else {
+        pill.innerHTML = `<span class="leg-icon">🚗</span>Uber ${leg.km.toFixed(1)} km
+          <span class="leg-fare" data-krw="${leg.fare}">${formatKrw(leg.fare)}</span>`;
+      }
+      timelineEl.appendChild(pill);
+    }
+  });
+}
+
+function renderTimelineEditContent(day, dayNum, timelineEl) {
+  const spots = editStates[dayNum].pendingSpots;
+  spots.forEach((spot, si) => {
+    const item = document.createElement('div');
+    item.className = 'timeline-item edit-mode';
+    item.draggable = true;
+    item.dataset.si = si;
+    item.innerHTML = `
+      <div class="drag-handle" title="拖拉調換順序">⠿</div>
+      <div class="timeline-dot">${SPOT_ICONS[spot.type] || '📍'}</div>
+      <div class="timeline-content">
+        <div class="timeline-time">${spot.time}</div>
+        <div class="timeline-name">
+          <span class="spot-num" style="background:${day.color}">${si + 1}</span>
+          ${spot.name}
+        </div>
+        <div class="timeline-name-kr">${spot.nameKr}</div>
+        <div class="edit-fields">
+          <textarea class="edit-desc" rows="2">${spot.desc.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+          <div class="edit-costs">
+            <div class="edit-cost-field">
+              <label>🍽️ 餐飲₩</label>
+              <input type="number" class="edit-food" value="${spot.budget.food}" min="0" step="1000">
+            </div>
+            <div class="edit-cost-field">
+              <label>🎫 門票₩</label>
+              <input type="number" class="edit-ticket" value="${spot.budget.ticket}" min="0" step="1000">
+            </div>
+            <div class="edit-cost-field">
+              <label>🛍️ 購物₩</label>
+              <input type="number" class="edit-shopping" value="${spot.budget.shopping}" min="0" step="1000">
+            </div>
+          </div>
+        </div>
+      </div>`;
+    item.addEventListener('dragstart', e => {
+      dragSrcIdx = si;
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      timelineEl.querySelectorAll('.timeline-item').forEach(el => el.classList.remove('drag-over'));
+    });
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (dragSrcIdx !== si) item.classList.add('drag-over');
+    });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      if (dragSrcIdx === null || dragSrcIdx === si) return;
+      collectEditValues(dayNum);
+      const pending = editStates[dayNum].pendingSpots;
+      const [moved] = pending.splice(dragSrcIdx, 1);
+      pending.splice(si, 0, moved);
+      dragSrcIdx = null;
+      timelineEl.innerHTML = '';
+      renderTimelineEditContent(day, dayNum, timelineEl);
+    });
+    timelineEl.appendChild(item);
+  });
+}
+
+function collectEditValues(dayNum) {
+  const timelineEl = document.getElementById(`timeline-day-${dayNum}`);
+  if (!timelineEl || !editStates[dayNum]?.active) return;
+  const items = timelineEl.querySelectorAll('.timeline-item.edit-mode');
+  items.forEach((item, i) => {
+    const spot = editStates[dayNum].pendingSpots[i];
+    if (!spot) return;
+    spot.desc            = item.querySelector('.edit-desc').value;
+    spot.budget.food     = parseInt(item.querySelector('.edit-food').value)     || 0;
+    spot.budget.ticket   = parseInt(item.querySelector('.edit-ticket').value)   || 0;
+    spot.budget.shopping = parseInt(item.querySelector('.edit-shopping').value) || 0;
+  });
+}
+
+async function applyAndSaveDayEdit(dayNum) {
+  collectEditValues(dayNum);
+  const state = editStates[dayNum];
+  if (!state?.active) return;
+  const day = ITINERARY.find(d => d.day === dayNum);
+  if (!day) return;
+
+  const prevOrder = day.spots.map(s => s.name);
+  day.spots           = state.pendingSpots;
+  day.summary.food     = day.spots.reduce((s, sp) => s + sp.budget.food,     0);
+  day.summary.ticket   = day.spots.reduce((s, sp) => s + sp.budget.ticket,   0);
+  day.summary.shopping = day.spots.reduce((s, sp) => s + sp.budget.shopping, 0);
+
+  editStates[dayNum] = { active: false };
+  renderTimelineForDay(dayNum, false);
+  updateEditBtn(dayNum, false);
+
+  const transportKrw = calcDayTransport(day);
+  const nonTransport  = Object.entries(day.summary).filter(([k]) => k !== 'transport').reduce((s, [, v]) => s + v, 0);
+  const dayTotal = nonTransport + transportKrw;
+  const previewEl = document.getElementById(`day-preview-${day.day}`);
+  if (previewEl) previewEl.textContent = `${formatKrw(dayTotal)} · ${krwToHkd(dayTotal)}`;
+
+  renderTotalBudget();
+
+  const orderChanged = prevOrder.some((n, i) => n !== day.spots[i]?.name);
+  if (orderChanged) {
+    initDayMap(`map-day-${day.day}`, day);
+    initOverviewMap();
+  }
+
+  if (APPS_SCRIPT_URL) {
+    await syncDayToSheet(day.spots);
+  } else {
+    showSyncToast('✅ 已更新（未設定 Apps Script，僅本地生效）');
+  }
+}
+
+function updateDayBudgetTable(dayNum) {
+  const tbody = document.getElementById(`budget-tbody-${dayNum}`);
+  if (!tbody) return;
+  const day = ITINERARY.find(d => d.day === dayNum);
+  if (!day) return;
+  const transportKrw = calcDayTransport(day);
+  const nonTransportTotal = Object.entries(day.summary).filter(([k]) => k !== 'transport').reduce((s, [, v]) => s + v, 0);
+  const dayTotal = nonTransportTotal + transportKrw;
+  const cats = [
+    { key: 'transport', label: '🚗 Uber 交通', dynamic: transportKrw },
+    { key: 'food',      label: '🍽️ 餐飲' },
+    { key: 'ticket',    label: '🎫 門票' },
+    { key: 'shopping',  label: '🛍️ 購物' },
+    { key: 'hotel',     label: '🏨 住宿' }
+  ];
+  let html = '';
+  cats.forEach(cat => {
+    const val = cat.dynamic !== undefined ? cat.dynamic : (day.summary[cat.key] || 0);
+    if (val === 0) return;
+    html += `<tr><td>${cat.label}</td><td class="krw">${formatKrw(val)}</td><td class="hkd" data-krw="${val}">${krwToHkd(val)}</td></tr>`;
+  });
+  html += `<tr class="total-row"><td>當日合計</td><td class="krw">${formatKrw(dayTotal)}</td><td class="hkd" data-krw="${dayTotal}">${krwToHkd(dayTotal)}</td></tr>`;
+  tbody.innerHTML = html;
+}
+
+async function syncDayToSheet(spots) {
+  const updates = spots.filter(s => s.rowIndex).map(s => ({
+    row:      s.rowIndex,
+    desc:     s.desc,
+    food:     s.budget.food,
+    ticket:   s.budget.ticket,
+    shopping: s.budget.shopping
+  }));
+  if (!updates.length) {
+    showSyncToast('⚠️ 本地資料無法同步 Google Sheet');
+    return;
+  }
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode:   'no-cors',
+      body:   JSON.stringify({ updates })
+    });
+    showSyncToast('✅ 已同步至 Google Sheet');
+  } catch {
+    showSyncToast('❌ 同步失敗，請檢查網路連線');
+  }
+}
+
+function showSyncToast(msg) {
+  let t = document.getElementById('sync-toast');
+  if (!t) { t = document.createElement('div'); t.id = 'sync-toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.className = 'sync-toast show';
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), 3000);
 }
 
 // ── 總預算 ─────────────────────────────────────────
