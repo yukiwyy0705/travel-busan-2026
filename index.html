@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>釜山 5 日遊 🇰🇷</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="brand">🇰🇷 釜山 5 日遊</span>
+  <a href="#overview" class="active">地圖</a>
+  <a href="#day-1">Day 1</a>
+  <a href="#day-2">Day 2</a>
+  <a href="#day-3">Day 3</a>
+  <a href="#day-4">Day 4</a>
+  <a href="#day-5">Day 5</a>
+  <a href="#budget">預算</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <span class="hero-flag">🇰🇷</span>
+  <h1>韓國釜山 5 日遊</h1>
+  <p class="subtitle">2026年6月27日 — 7月1日 · 海鮮 · 文化 · 購物 · 自然</p>
+
+  <div class="hero-stats">
+    <div class="stat-card">
+      <span class="val">✈ HKG→PUS</span>
+      <span class="lbl">6月27日 01:50 → 06:20</span>
+    </div>
+    <div class="stat-card">
+      <span class="val">5</span>
+      <span class="lbl">天數</span>
+    </div>
+    <div class="stat-card">
+      <span class="val">✈ PUS→HKG</span>
+      <span class="lbl">7月1日 21:50 → 00:15+1</span>
+    </div>
+    <div class="stat-card">
+      <span class="val" id="hero-total-krw">計算中...</span>
+      <span class="lbl">總預算 KRW</span>
+    </div>
+    <div class="stat-card">
+      <span class="val" id="hero-total-hkd" data-krw="0">--</span>
+      <span class="lbl">總預算 HKD</span>
+    </div>
+  </div>
+
+  <!-- Currency Widget -->
+  <div class="currency-widget">
+    <h3>💱 KRW → HKD 即時換算</h3>
+    <div class="currency-row">
+      <div class="currency-input-wrap">
+        <span class="currency-label">₩</span>
+        <input type="number" id="krw-input" placeholder="輸入韓圜金額" min="0" value="10000">
+      </div>
+      <span class="currency-arrow">→</span>
+      <div class="currency-result">
+        <div class="result-val" id="hkd-output">--</div>
+        <div class="result-lbl">港幣 HKD</div>
+      </div>
+    </div>
+    <div class="rate-info">
+      <span class="rate-dot"></span>
+      <span id="rate-display">載入即時匯率中...</span>
+    </div>
+  </div>
+</section>
+
+<!-- OVERVIEW MAP -->
+<div class="section" id="overview" data-section>
+  <div class="section-title">📍 釜山景點全覽地圖</div>
+  <div id="overview-map"></div>
+  <div class="map-legend" id="map-legend">
+    <!-- JS 生成 -->
+  </div>
+</div>
+
+<!-- DAY CARDS -->
+<div class="section">
+  <div class="section-title">🗓️ 每日行程</div>
+  <div class="days-container" id="days-container">
+    <!-- JS 生成 -->
+  </div>
+</div>
+
+<!-- TOTAL BUDGET -->
+<div class="section" id="budget" data-section>
+  <div class="section-title">💰 5 天總預算</div>
+  <div class="budget-summary-card">
+    <div class="budget-summary-header">預算明細（KRW / HKD）</div>
+    <div class="budget-summary-body">
+      <div class="summary-grid" id="budget-cat-grid">
+        <!-- JS 生成 -->
+      </div>
+      <div class="grand-total">
+        <div>
+          <div class="label">5 天總計</div>
+          <div class="amount-krw" id="grand-krw">--</div>
+        </div>
+        <div class="amount-hkd" id="grand-hkd" data-krw="0">--</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>✈️ 釜山 5 日遊行程網站 · 地圖資料 © <a href="https://www.openstreetmap.org/">OpenStreetMap</a> · 匯率 © ExchangeRate-API</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="data/itinerary.js"></script>
+<script src="app.js"></script>
+
+<script>
+  // 生成地圖圖例
+  document.addEventListener('DOMContentLoaded', () => {
+    const legend = document.getElementById('map-legend');
+    ITINERARY.forEach(day => {
+      const item = document.createElement('div');
+      item.className = 'legend-item';
+      item.innerHTML = `<div class="legend-dot" style="background:${day.color}"></div>${day.date}：${day.theme}`;
+      legend.appendChild(item);
+    });
+  });
+</script>
+
+</body>
+</html>
