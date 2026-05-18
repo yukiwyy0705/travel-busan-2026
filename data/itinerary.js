@@ -24,7 +24,7 @@ const ITINERARY = [
         type: 'transport',
         name: '金海國際機場抵達',
         nameKr: '김해국제공항 도착',
-        desc: '由香港出發 (01:50)，抵達金海機場。乘搭 BGL 輕軌至沙上站寄存行李，再轉地鐵前往松島',
+        desc: '由香港出發 (01:50)，抵達金海機場。乘搭 BGL 輕軌至沙上站寄存大件行李',
         lat: 35.1795, lng: 128.9381,
         budget: { transport: 8000, food: 0, ticket: 0, shopping: 0 }
       },
@@ -33,18 +33,9 @@ const ITINERARY = [
         type: 'transport',
         name: '沙上站 行李寄存',
         nameKr: '사상역 물품보관함',
-        desc: '金海機場乘 BGL 輕軌（約 20 分鐘）抵沙上站，使用站內 coin locker 寄存大件行李（約 ₩4,000–6,000），輕裝出發遊覽',
+        desc: '金海機場乘 BGL 輕軌（約 20 分鐘）抵沙上站，使用站內 coin locker 寄存大件行李（約 ₩4,000–6,000），輕裝直接出發遊覽',
         lat: 35.1481, lng: 128.9918,
         budget: { transport: 0, food: 0, ticket: 5000, shopping: 0 }
-      },
-      {
-        time: '09:00',
-        type: 'hotel',
-        name: 'Elmomento Songdo 放行李',
-        nameKr: '엘모멘토 송도',
-        desc: '酒店 Check-in（或先寄存隨身小包），梳洗休息。酒店位於松島海灘旁',
-        lat: HOTEL.lat, lng: HOTEL.lng,
-        budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
       },
       {
         time: '10:30',
