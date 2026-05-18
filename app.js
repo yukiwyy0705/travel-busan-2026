@@ -37,6 +37,22 @@ function parseCSV(text) {
   return rows;
 }
 
+const DAY_COLORS = { 1: '#e74c3c', 2: '#3498db', 3: '#2ecc71', 4: '#9b59b6', 5: '#f39c12' };
+
+function parseCoordsFromGoogleMaps(url) {
+  if (!url) return { lat: 0, lng: 0 };
+  // @lat,lng,zoom format (address bar / long share link)
+  let m = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  // !3dLAT!4dLNG format (embedded in data= param)
+  m = url.match(/!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  // q=lat,lng format
+  m = url.match(/[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  return { lat: 0, lng: 0 };
+}
+
 function csvToItinerary(csv) {
   const rows = parseCSV(csv);
   if (rows.length < 2) return null;
@@ -61,7 +77,7 @@ function csvToItinerary(csv) {
         date: `Day ${dayNum}`,
         dateLabel: get(row, '日期'),
         theme: get(row, '主題'),
-        color: get(row, '主題色') || '#3498db',
+        color: DAY_COLORS[dayNum] || '#3498db',
         spots: [],
         hotel: HOTEL,
         summary: { transport: 0, food: 0, ticket: 0, shopping: 0, hotel: dayNum < 5 ? 234863 : 0 }
@@ -72,6 +88,7 @@ function csvToItinerary(csv) {
     const food    = parseInt(get(row, '餐飲費₩'))  || 0;
     const ticket  = parseInt(get(row, '門票費₩'))  || 0;
     const shopping = parseInt(get(row, '購物費₩')) || 0;
+    const { lat, lng } = parseCoordsFromGoogleMaps(get(row, 'Google Map 連結'));
 
     dayMap[dayNum].spots.push({
       time:    get(row, '時間'),
@@ -79,8 +96,8 @@ function csvToItinerary(csv) {
       name:    get(row, '地點名稱'),
       nameKr:  get(row, '韓文名稱'),
       desc:    get(row, '描述'),
-      lat:     parseFloat(get(row, '緯度'))  || 0,
-      lng:     parseFloat(get(row, '經度'))  || 0,
+      lat,
+      lng,
       budget:  { transport: 0, food, ticket, shopping }
     });
 
