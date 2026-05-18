@@ -4,7 +4,7 @@ const dayMaps = {};
 const dayMapMarkers = {};
 
 // ── Uber 車費計算 ─────────────────────────────────────
-const UBER = { base: 3300, perKm: 1050, walkThreshold: 0.45 };
+const UBER = { base: 4800, perKm: 1100, walkThreshold: 0.45 };
 
 function haversineKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
@@ -295,7 +295,7 @@ function renderDayCards() {
     // Uber 費率說明
     const note = document.createElement('div');
     note.className = 'uber-note';
-    note.textContent = `起步 ₩3,300 · 每公里 ₩1,050（步行 < ${UBER.walkThreshold * 1000}m 免費）`;
+    note.textContent = `起步 ₩4,800 · 每公里 ₩1,100（步行 < ${UBER.walkThreshold * 1000}m 免費）`;
     rightWrap.appendChild(note);
 
     body.appendChild(rightWrap);

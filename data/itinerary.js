@@ -24,16 +24,25 @@ const ITINERARY = [
         type: 'transport',
         name: '金海國際機場抵達',
         nameKr: '김해국제공항 도착',
-        desc: '由香港出發 (01:50)，抵達金海機場。乘搭機場巴士或地鐵前往松島酒店',
+        desc: '由香港出發 (01:50)，抵達金海機場。乘搭 BGL 輕軌至沙上站寄存行李，再轉地鐵前往松島',
         lat: 35.1795, lng: 128.9381,
         budget: { transport: 8000, food: 0, ticket: 0, shopping: 0 }
+      },
+      {
+        time: '07:15',
+        type: 'transport',
+        name: '沙上站 行李寄存',
+        nameKr: '사상역 물품보관함',
+        desc: '金海機場乘 BGL 輕軌（約 20 分鐘）抵沙上站，使用站內 coin locker 寄存大件行李（約 ₩4,000–6,000），輕裝出發遊覽',
+        lat: 35.1481, lng: 128.9918,
+        budget: { transport: 0, food: 0, ticket: 5000, shopping: 0 }
       },
       {
         time: '09:00',
         type: 'hotel',
         name: 'Elmomento Songdo 放行李',
         nameKr: '엘모멘토 송도',
-        desc: '酒店 Check-in（或先寄存行李），梳洗休息。酒店位於松島海灘旁',
+        desc: '酒店 Check-in（或先寄存隨身小包），梳洗休息。酒店位於松島海灘旁',
         lat: HOTEL.lat, lng: HOTEL.lng,
         budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
       },
@@ -74,11 +83,20 @@ const ITINERARY = [
         budget: { transport: 1500, food: 30000, ticket: 0, shopping: 0 }
       },
       {
-        time: '21:00',
+        time: '20:30',
+        type: 'transport',
+        name: '沙上站 取回行李',
+        nameKr: '사상역 물품보관함 수령',
+        desc: '由扎嘎其市場乘地鐵至沙上站（사상역），取回早上寄存的大件行李',
+        lat: 35.1481, lng: 128.9918,
+        budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
+      },
+      {
+        time: '21:30',
         type: 'hotel',
         name: 'Elmomento Songdo 返回酒店',
         nameKr: '엘모멘토 송도 귀환',
-        desc: '搭乘 Uber 由扎嘎其市場返回松島酒店，結束第一天行程',
+        desc: '攜行李搭乘 Uber 返回松島酒店，結束第一天行程',
         lat: HOTEL.lat, lng: HOTEL.lng,
         budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
       }
@@ -94,16 +112,25 @@ const ITINERARY = [
     color: '#3498db',
     spots: [
       {
-        time: '09:00',
+        time: '08:00',
         type: 'hotel',
         name: 'Elmomento Songdo 出發',
         nameKr: '엘모멘토 송도 출발',
-        desc: '由松島酒店出發，前往今日第一站甘川文化村',
+        desc: '由松島酒店出發，前往土城洞享用早餐',
         lat: HOTEL.lat, lng: HOTEL.lng,
         budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
       },
       {
-        time: '09:30',
+        time: '08:30',
+        type: 'food',
+        name: '土城洞早餐',
+        nameKr: '토성동',
+        desc: '甘川附近的在地食堂，以傳統韓式定食作為早餐，豐盛暖胃',
+        lat: 35.1000, lng: 129.0150,
+        budget: { transport: 0, food: 12000, ticket: 0, shopping: 0 }
+      },
+      {
+        time: '10:00',
         type: 'attraction',
         name: '甘川文化村',
         nameKr: '감천문화마을',
@@ -112,13 +139,13 @@ const ITINERARY = [
         budget: { transport: 2000, food: 0, ticket: 2000, shopping: 10000 }
       },
       {
-        time: '12:00',
+        time: '12:30',
         type: 'food',
-        name: '土城洞午餐',
-        nameKr: '토성동',
-        desc: '甘川附近的在地食堂，享用傳統韓式定食',
-        lat: 35.1000, lng: 129.0150,
-        budget: { transport: 0, food: 12000, ticket: 0, shopping: 0 }
+        name: '南浦洞 밀면 午餐',
+        nameKr: '남포동 밀면',
+        desc: '釜山獨家特色冷麵「밀면」，以小麥粉製作，口感爽滑彈牙，夏日消暑首選，南浦洞一帶多家在地老字號',
+        lat: 35.0990, lng: 129.0258,
+        budget: { transport: 0, food: 13000, ticket: 0, shopping: 0 }
       },
       {
         time: '14:00',
@@ -167,7 +194,7 @@ const ITINERARY = [
       }
     ],
     hotel: HOTEL,
-    summary: { transport: 0, food: 45000, ticket: 14000, shopping: 18000, hotel: 234863 }
+    summary: { transport: 0, food: 58000, ticket: 14000, shopping: 18000, hotel: 234863 }
   },
   {
     day: 3,
@@ -371,15 +398,6 @@ const ITINERARY = [
       },
       {
         time: '13:00',
-        type: 'hotel',
-        name: 'Elmomento Songdo 取回行李',
-        nameKr: '엘모멘토 송도 짐 수령',
-        desc: '返回松島酒店取回寄存行李，再前往南浦洞購物',
-        lat: HOTEL.lat, lng: HOTEL.lng,
-        budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
-      },
-      {
-        time: '13:30',
         type: 'shopping',
         name: '南浦洞手信採購',
         nameKr: '남포동 기념품',
@@ -388,11 +406,20 @@ const ITINERARY = [
         budget: { transport: 1500, food: 10000, ticket: 0, shopping: 40000 }
       },
       {
+        time: '17:30',
+        type: 'hotel',
+        name: 'Elmomento Songdo 取回行李',
+        nameKr: '엘모멘토 송도 짐 수령',
+        desc: '返回松島酒店取回 Check-out 後寄存的行李，準備前往機場',
+        lat: HOTEL.lat, lng: HOTEL.lng,
+        budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
+      },
+      {
         time: '18:30',
         type: 'transport',
         name: '前往金海國際機場',
         nameKr: '김해국제공항 출발',
-        desc: '乘搭地鐵或機場巴士前往機場，航班 21:50 起飛回香港 (00:15+1)',
+        desc: '由松島酒店乘搭機場巴士或 Uber 前往機場，航班 21:50 起飛回香港 (00:15+1)',
         lat: 35.1795, lng: 128.9381,
         budget: { transport: 8000, food: 15000, ticket: 0, shopping: 0 }
       }

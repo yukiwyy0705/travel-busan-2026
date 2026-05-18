@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="釜山旅遊行程 2026"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1
+                         http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <metadata>
+    <name>釜山必到地點</name>
+    <desc>2026年6月27日 — 7月1日 釜山旅遊指定餐廳</desc>
+    <time>2026-06-27T00:00:00Z</time>
+  </metadata>
+
+  <wpt lat="35.1518615" lon="129.1163713">
+    <name>할매재첩국 奶奶河蜆湯</name>
+    <desc>早餐推薦。清甜河蜆湯配白飯，海雲台在地老字號。Day 3 早餐。</desc>
+    <type>餐廳</type>
+  </wpt>
+
+  <wpt lat="35.1571861" lon="129.1217643">
+    <name>화륵 火勒（韓牛漢堡排）</name>
+    <desc>午餐／晚餐推薦。頂級韓牛漢堡排專門店，多汁嫩滑。Day 3 午餐。</desc>
+    <type>餐廳</type>
+  </wpt>
+
+  <wpt lat="35.1824072" lon="129.2088791">
+    <name>Coralani</name>
+    <desc>午餐／下午茶推薦。松亭海灘旁人氣咖啡廳，精緻甜品及特調飲品。Day 3 下午茶。</desc>
+    <type>咖啡廳</type>
+  </wpt>
+
+  <wpt lat="35.1615085" lon="129.1668928">
+    <name>거대갈비 巨大排骨</name>
+    <desc>午餐／晚餐推薦。超大份量韓牛烤排骨，Dalmaji 海岸線燒烤名店。Day 3 晚餐。</desc>
+    <type>餐廳</type>
+  </wpt>
+
+  <wpt lat="35.0599892" lon="129.071508">
+    <name>THRILL ON THE MUG 스릴온더머그</name>
+    <desc>午餐／下午茶推薦。影島海邊懸崖咖啡廳，釜山港灣絕美海景。Day 5 午後。</desc>
+    <type>咖啡廳</type>
+  </wpt>
+
+</gpx>
