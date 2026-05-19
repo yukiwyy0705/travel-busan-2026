@@ -675,6 +675,33 @@ footer {
   gap: 0.4rem;
 }
 
+.edit-row-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.edit-row-inline label {
+  font-size: 0.72rem;
+  color: var(--gray);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.edit-time {
+  flex: 1;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  padding: 0.28rem 0.5rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  max-width: 140px;
+}
+
+.edit-time:focus { border-color: var(--navy); }
+
 .edit-desc {
   width: 100%;
   border: 1.5px solid var(--border);

@@ -96,9 +96,11 @@ function csvToItinerary(csv) {
       rowIndex: ri + 1,
       time:    get(row, '時間'),
       type:    TYPE_ZH[typeZh] || typeZh || 'attraction',
+      typeZh:  typeZh,
       name:    get(row, '地點名稱'),
       nameKr:  get(row, '韓文名稱'),
       desc:    get(row, '描述'),
+      mapUrl:  get(row, 'Google Map 連結'),
       lat,
       lng,
       budget:  { transport: 0, food, ticket, shopping }
@@ -519,13 +521,16 @@ function renderTimelineEditContent(day, dayNum, timelineEl) {
       <div class="drag-handle" title="拖拉調換順序">⠿</div>
       <div class="timeline-dot">${SPOT_ICONS[spot.type] || '📍'}</div>
       <div class="timeline-content">
-        <div class="timeline-time">${spot.time}</div>
         <div class="timeline-name">
           <span class="spot-num" style="background:${day.color}">${si + 1}</span>
           ${spot.name}
         </div>
         <div class="timeline-name-kr">${spot.nameKr}</div>
         <div class="edit-fields">
+          <div class="edit-row-inline">
+            <label>⏰ 時間</label>
+            <input type="text" class="edit-time" value="${(spot.time || '').replace(/"/g,'&quot;')}" placeholder="例如：09:30">
+          </div>
           <textarea class="edit-desc" rows="2">${spot.desc.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
           <div class="edit-costs">
             <div class="edit-cost-field">
@@ -580,6 +585,7 @@ function collectEditValues(dayNum) {
   items.forEach((item, i) => {
     const spot = editStates[dayNum].pendingSpots[i];
     if (!spot) return;
+    spot.time            = item.querySelector('.edit-time').value.trim();
     spot.desc            = item.querySelector('.edit-desc').value;
     spot.budget.food     = parseInt(item.querySelector('.edit-food').value)     || 0;
     spot.budget.ticket   = parseInt(item.querySelector('.edit-ticket').value)   || 0;
@@ -651,17 +657,25 @@ function updateDayBudgetTable(dayNum) {
 }
 
 async function syncDayToSheet(spots) {
-  const updates = spots.filter(s => s.rowIndex).map(s => ({
-    row:      s.rowIndex,
-    desc:     s.desc,
-    food:     s.budget.food,
-    ticket:   s.budget.ticket,
-    shopping: s.budget.shopping
-  }));
-  if (!updates.length) {
+  if (!spots.length || spots.some(s => !s.rowIndex)) {
     showSyncToast('⚠️ 本地資料無法同步 Google Sheet');
     return;
   }
+  // 拿出當日所有「原始 Sheet 行號」並排序成固定的行槽
+  const rowSlots = spots.map(s => s.rowIndex).sort((a, b) => a - b);
+  // 將目前（可能已重新排序的）spot 順序寫入這些行槽
+  const updates = spots.map((spot, i) => ({
+    row:      rowSlots[i],
+    time:     spot.time || '',
+    typeZh:   spot.typeZh || '',
+    name:     spot.name || '',
+    nameKr:   spot.nameKr || '',
+    desc:     spot.desc || '',
+    mapUrl:   spot.mapUrl || '',
+    food:     spot.budget.food,
+    ticket:   spot.budget.ticket,
+    shopping: spot.budget.shopping
+  }));
   try {
     const url = `${APPS_SCRIPT_URL}?data=${encodeURIComponent(JSON.stringify({ updates }))}`;
     await fetch(url, { mode: 'no-cors' });
