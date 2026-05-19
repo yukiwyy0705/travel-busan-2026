@@ -578,6 +578,19 @@ footer {
 .popup-kr   { font-size: 0.75rem; color: var(--gray); margin-bottom: 0.3rem; }
 .popup-desc { font-size: 0.8rem; color: #555; }
 
+a.popup-link {
+  display: block;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s;
+  margin-bottom: 0.1rem;
+}
+
+a.popup-link:hover {
+  color: var(--coral);
+  text-decoration: underline;
+}
+
 /* ── DATA SOURCE BADGE ── */
 .data-badge {
   font-size: 0.62rem;

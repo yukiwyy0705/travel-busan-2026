@@ -236,8 +236,13 @@ function buildCostBadges(spot) {
   return parts.length ? `<div class="cost-badges">${parts.join('')}</div>` : '';
 }
 
+function kakaoMapLink(name, lat, lng) {
+  return `https://map.kakao.com/link/map/${encodeURIComponent(name)},${lat},${lng}`;
+}
+
 function buildPopup(spot) {
-  return `<div class="popup-name">${SPOT_ICONS[spot.type] || '📍'} ${spot.name}</div>
+  const url = kakaoMapLink(spot.nameKr || spot.name, spot.lat, spot.lng);
+  return `<a class="popup-name popup-link" href="${url}" target="_blank" rel="noopener">${SPOT_ICONS[spot.type] || '📍'} ${spot.name} ↗</a>
 <div class="popup-kr">${spot.nameKr}</div>
 <div class="popup-desc">${spot.desc}</div>`;
 }
@@ -326,9 +331,9 @@ function initOverviewMap() {
   });
 
   addHotelMarker(overviewMap, HOTEL.lat, HOTEL.lng,
-    `<div class="popup-name">🏨 ${HOTEL.name}</div>
+    `<a class="popup-name popup-link" href="${kakaoMapLink(HOTEL.nameKr || HOTEL.name, HOTEL.lat, HOTEL.lng)}" target="_blank" rel="noopener">🏨 ${HOTEL.name} ↗</a>
 <div class="popup-kr">${HOTEL.nameKr}</div>
-<div class="popup-desc"><a href="${HOTEL.url}" target="_blank">在 Google Maps 查看 ↗</a></div>`);
+<div class="popup-desc">點擊名稱可在 Kakao Map 開啟地點</div>`);
 
   ITINERARY.forEach(day => {
     day.spots.forEach((spot, i) => {
