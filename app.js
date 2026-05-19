@@ -7,7 +7,28 @@ const dayMapMarkers = {};
 const SHEETS_ID = '1_m9K0y_d-0oc_w1LwWZcpw8EicysazTbh3c65fxaUCY';
 const SHEETS_URL = `https://docs.google.com/spreadsheets/d/${SHEETS_ID}/export?format=csv`;
 // 填入 Google Apps Script Web App URL（留空則僅本地更新）
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzkTMobijA-zLoXOx2Gf8TXNwzZeoOM9mw7L1PuRFIC0pPYzsxqu-vb0kGZ740wi8mvdA/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/library/d/1Wltj7HSkcjVVdrdwxzUCpLgWGLZvIfDsOfOe-YDUAB3meH5YlOEsnI39/3';
+// 填入 Kakao Maps JavaScript App Key（https://developers.kakao.com）
+const KAKAO_KEY = '01a827394b6ee32b9d7c68dd0f331172';
+
+function loadKakaoSdk() {
+  return new Promise((resolve, reject) => {
+    if (window.kakao && window.kakao.maps && window.kakao.maps.Map) { resolve(); return; }
+    if (window.kakao && window.kakao.maps) { kakao.maps.load(resolve); return; }
+    if (!KAKAO_KEY) { reject(new Error('未設定 KAKAO_KEY')); return; }
+    const s = document.createElement('script');
+    s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_KEY}&autoload=false`;
+    s.onload = () => {
+      if (window.kakao && window.kakao.maps) {
+        kakao.maps.load(resolve);
+      } else {
+        reject(new Error('Kakao SDK 物件未掛載到 window，請檢查 App Key 與已註冊網域'));
+      }
+    };
+    s.onerror = () => reject(new Error('Kakao SDK script 載入失敗（CORS/網域未註冊/key 錯誤）'));
+    document.head.appendChild(s);
+  });
+}
 
 const TYPE_ZH = {
   '交通': 'transport', '景點': 'attraction', '餐廳': 'food',
@@ -207,46 +228,7 @@ document.getElementById('krw-input').addEventListener('input', function () {
     exchangeRate ? 'HK$' + (val * exchangeRate).toFixed(2) : '讀取中...';
 });
 
-// ── 地圖 ──────────────────────────────────────────────
-function createMarkerIcon(color, num, size = 32) {
-  return L.divIcon({
-    className: '',
-    html: `<div style="
-      width:${size}px;height:${size}px;
-      background:${color};
-      border:3px solid white;
-      border-radius:50% 50% 50% 0;
-      transform:rotate(-45deg);
-      box-shadow:0 2px 6px rgba(0,0,0,0.3);
-      display:flex;align-items:center;justify-content:center;
-    "><span style="
-      transform:rotate(45deg);
-      color:white;font-weight:700;
-      font-size:${size < 28 ? 10 : 13}px;
-      line-height:1;font-family:sans-serif;
-    ">${num}</span></div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size],
-    popupAnchor: [0, -size]
-  });
-}
-
-function createHotelIcon() {
-  return L.divIcon({
-    className: '',
-    html: `<div style="
-      background:#1a3a5c;color:white;
-      border:3px solid white;border-radius:8px;
-      padding:2px 6px;font-size:13px;
-      box-shadow:0 2px 6px rgba(0,0,0,0.4);
-      white-space:nowrap;font-weight:700;
-    ">🏨 酒店</div>`,
-    iconSize: [60, 28],
-    iconAnchor: [30, 28],
-    popupAnchor: [0, -30]
-  });
-}
-
+// ── 地圖（Kakao Maps）──────────────────────────────────
 function buildCostBadges(spot) {
   const parts = [];
   if (spot.budget.food > 0)   parts.push(`<span class="cost-badge food">🍽️ ${formatKrw(spot.budget.food)}</span>`);
@@ -260,50 +242,120 @@ function buildPopup(spot) {
 <div class="popup-desc">${spot.desc}</div>`;
 }
 
-function initOverviewMap() {
-  if (overviewMap) { overviewMap.remove(); overviewMap = null; }
-  overviewMap = L.map('overview-map', { zoomControl: true }).setView([35.12, 129.06], 11);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
-    maxZoom: 19
-  }).addTo(overviewMap);
+function showKakaoPopup(map, latlng, html) {
+  if (map._popup) map._popup.setMap(null);
+  const wrap = document.createElement('div');
+  wrap.className = 'kakao-popup-wrapper';
+  wrap.innerHTML = `<div class="kakao-popup-close">×</div><div class="kakao-popup-content">${html}</div>`;
+  const popup = new kakao.maps.CustomOverlay({
+    position: latlng,
+    content: wrap,
+    xAnchor: 0.5,
+    yAnchor: 1.25,
+    zIndex: 1000
+  });
+  wrap.querySelector('.kakao-popup-close').addEventListener('click', () => popup.setMap(null));
+  popup.setMap(map);
+  map._popup = popup;
+}
 
-  L.marker([HOTEL.lat, HOTEL.lng], { icon: createHotelIcon() })
-    .addTo(overviewMap)
-    .bindPopup(`<div class="popup-name">🏨 ${HOTEL.name}</div>
+function addNumberedMarker(map, lat, lng, color, num, size, popupContent) {
+  const el = document.createElement('div');
+  el.style.cssText = `
+    width:${size}px;height:${size}px;
+    background:${color};
+    border:3px solid white;
+    border-radius:50% 50% 50% 0;
+    transform:rotate(-45deg);
+    box-shadow:0 2px 6px rgba(0,0,0,0.3);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;`;
+  const inner = document.createElement('span');
+  inner.style.cssText = `
+    transform:rotate(45deg);
+    color:white;font-weight:700;
+    font-size:${size < 28 ? 10 : 13}px;
+    line-height:1;font-family:sans-serif;`;
+  inner.textContent = num;
+  el.appendChild(inner);
+
+  const latlng = new kakao.maps.LatLng(lat, lng);
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    showKakaoPopup(map, latlng, popupContent);
+  });
+  const overlay = new kakao.maps.CustomOverlay({
+    position: latlng,
+    content: el,
+    xAnchor: 0.5,
+    yAnchor: 1
+  });
+  overlay.setMap(map);
+  return { overlay, latlng, el };
+}
+
+function addHotelMarker(map, lat, lng, popupContent) {
+  const el = document.createElement('div');
+  el.style.cssText = `
+    background:#1a3a5c;color:white;
+    border:3px solid white;border-radius:8px;
+    padding:2px 6px;font-size:13px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);
+    white-space:nowrap;font-weight:700;cursor:pointer;`;
+  el.textContent = '🏨 酒店';
+  const latlng = new kakao.maps.LatLng(lat, lng);
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    showKakaoPopup(map, latlng, popupContent);
+  });
+  new kakao.maps.CustomOverlay({
+    position: latlng,
+    content: el,
+    xAnchor: 0.5,
+    yAnchor: 1
+  }).setMap(map);
+}
+
+function initOverviewMap() {
+  const container = document.getElementById('overview-map');
+  if (!container || !window.kakao || !kakao.maps || !kakao.maps.Map) return;
+  container.innerHTML = '';
+  overviewMap = new kakao.maps.Map(container, {
+    center: new kakao.maps.LatLng(35.12, 129.06),
+    level: 8
+  });
+
+  addHotelMarker(overviewMap, HOTEL.lat, HOTEL.lng,
+    `<div class="popup-name">🏨 ${HOTEL.name}</div>
 <div class="popup-kr">${HOTEL.nameKr}</div>
 <div class="popup-desc"><a href="${HOTEL.url}" target="_blank">在 Google Maps 查看 ↗</a></div>`);
 
   ITINERARY.forEach(day => {
     day.spots.forEach((spot, i) => {
-      L.marker([spot.lat, spot.lng], { icon: createMarkerIcon(day.color, i + 1) })
-        .addTo(overviewMap)
-        .bindPopup(buildPopup(spot));
+      addNumberedMarker(overviewMap, spot.lat, spot.lng, day.color, i + 1, 32, buildPopup(spot));
     });
   });
 }
 
 function initDayMap(mapId, dayData) {
-  const existing = dayMaps[dayData.day];
-  if (existing) { existing.remove(); delete dayMaps[dayData.day]; }
+  const container = document.getElementById(mapId);
+  if (!container || !window.kakao || !kakao.maps || !kakao.maps.Map) return null;
+  container.innerHTML = '';
 
-  const map = L.map(mapId, { zoomControl: true, scrollWheelZoom: true })
-    .setView([dayData.spots[0].lat, dayData.spots[0].lng], 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap', maxZoom: 19
-  }).addTo(map);
-
-  const bounds = [];
-  const markers = [];
-  dayData.spots.forEach((spot, i) => {
-    bounds.push([spot.lat, spot.lng]);
-    const marker = L.marker([spot.lat, spot.lng], { icon: createMarkerIcon(dayData.color, i + 1, 26) })
-      .addTo(map)
-      .bindPopup(buildPopup(spot));
-    markers.push(marker);
+  const first = dayData.spots[0];
+  const map = new kakao.maps.Map(container, {
+    center: new kakao.maps.LatLng(first.lat, first.lng),
+    level: 5
   });
 
-  if (bounds.length > 1) map.fitBounds(bounds, { padding: [20, 20] });
+  const markers = [];
+  const bounds = new kakao.maps.LatLngBounds();
+  dayData.spots.forEach((spot, i) => {
+    bounds.extend(new kakao.maps.LatLng(spot.lat, spot.lng));
+    markers.push(addNumberedMarker(map, spot.lat, spot.lng, dayData.color, i + 1, 26, buildPopup(spot)));
+  });
+
+  if (dayData.spots.length > 1) map.setBounds(bounds, 20, 20, 20, 20);
   dayMaps[dayData.day] = map;
   dayMapMarkers[dayData.day] = markers;
   return map;
@@ -489,8 +541,9 @@ function renderTimelineNormalContent(day, timelineEl) {
       const map = dayMaps[day.day];
       const markers = dayMapMarkers[day.day];
       if (map && markers && markers[si]) {
-        map.flyTo([spot.lat, spot.lng], 16, { animate: true, duration: 0.8 });
-        setTimeout(() => markers[si].openPopup(), 850);
+        map.setLevel(3, { anchor: markers[si].latlng, animate: true });
+        map.panTo(markers[si].latlng);
+        setTimeout(() => markers[si].el.click(), 500);
         document.getElementById(`map-day-${day.day}`).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     });
@@ -777,6 +830,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (e) {
     console.warn('Google Sheets 載入失敗，使用本地資料：', e.message);
     setSourceBadge('local');
+  }
+
+  try {
+    await loadKakaoSdk();
+  } catch (e) {
+    console.error('Kakao Maps SDK 載入失敗：', e);
+    const ov = document.getElementById('overview-map');
+    if (ov) ov.innerHTML = `<div style="padding:2rem;text-align:center;color:#c0392b;background:#fff5f5;border:1px solid #f5b7b1;border-radius:8px;">⚠️ Kakao 地圖載入失敗<br><small style="color:#666">${e.message}<br>請開瀏覽器 DevTools Console 查看詳細錯誤</small></div>`;
   }
 
   renderAll();
