@@ -7,7 +7,7 @@ const dayMapMarkers = {};
 const SHEETS_ID = '1_m9K0y_d-0oc_w1LwWZcpw8EicysazTbh3c65fxaUCY';
 const SHEETS_URL = `https://docs.google.com/spreadsheets/d/${SHEETS_ID}/export?format=csv`;
 // 填入 Google Apps Script Web App URL（留空則僅本地更新）
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/library/d/1Wltj7HSkcjVVdrdwxzUCpLgWGLZvIfDsOfOe-YDUAB3meH5YlOEsnI39/3';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzkTMobijA-zLoXOx2Gf8TXNwzZeoOM9mw7L1PuRFIC0pPYzsxqu-vb0kGZ740wi8mvdA/exec';
 // 填入 Kakao Maps JavaScript App Key（https://developers.kakao.com）
 const KAKAO_KEY = '01a827394b6ee32b9d7c68dd0f331172';
 
