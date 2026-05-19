@@ -17,7 +17,7 @@ function loadKakaoSdk() {
     if (window.kakao && window.kakao.maps) { kakao.maps.load(resolve); return; }
     if (!KAKAO_KEY) { reject(new Error('未設定 KAKAO_KEY')); return; }
     const s = document.createElement('script');
-    s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_KEY}&autoload=false`;
+    s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_KEY}&autoload=false&libraries=services`;
     s.onload = () => {
       if (window.kakao && window.kakao.maps) {
         kakao.maps.load(resolve);
@@ -111,7 +111,6 @@ function csvToItinerary(csv) {
     const food    = parseInt(get(row, '餐飲費₩'))  || 0;
     const ticket  = parseInt(get(row, '門票費₩'))  || 0;
     const shopping = parseInt(get(row, '購物費₩')) || 0;
-    const { lat, lng } = parseCoordsFromGoogleMaps(get(row, 'Google Map 連結'));
 
     dayMap[dayNum].spots.push({
       rowIndex: ri + 1,
@@ -121,9 +120,8 @@ function csvToItinerary(csv) {
       name:    get(row, '地點名稱'),
       nameKr:  get(row, '韓文名稱'),
       desc:    get(row, '描述'),
-      mapUrl:  get(row, 'Google Map 連結'),
-      lat,
-      lng,
+      lat:     35.18,   // 預設釜山中心，會被 Kakao Places 修正
+      lng:     129.07,
       budget:  { transport: 0, food, ticket, shopping }
     });
 
@@ -236,15 +234,71 @@ function buildCostBadges(spot) {
   return parts.length ? `<div class="cost-badges">${parts.join('')}</div>` : '';
 }
 
-function kakaoMapLink(name, lat, lng) {
-  return `https://map.kakao.com/link/map/${encodeURIComponent(name)},${lat},${lng}`;
+function kakaoMapLink(spot) {
+  if (spot.kakaoPlaceId) return `https://place.map.kakao.com/${spot.kakaoPlaceId}`;
+  const name = spot.nameKr || spot.name;
+  return `https://map.kakao.com/link/map/${encodeURIComponent(name)},${spot.lat},${spot.lng}`;
 }
 
 function buildPopup(spot) {
-  const url = kakaoMapLink(spot.nameKr || spot.name, spot.lat, spot.lng);
-  return `<a class="popup-name popup-link" href="${url}" target="_blank" rel="noopener">${SPOT_ICONS[spot.type] || '📍'} ${spot.name} ↗</a>
+  return `<a class="popup-name popup-link" href="${kakaoMapLink(spot)}" target="_blank" rel="noopener">${SPOT_ICONS[spot.type] || '📍'} ${spot.name} ↗</a>
 <div class="popup-kr">${spot.nameKr}</div>
 <div class="popup-desc">${spot.desc}</div>`;
+}
+
+// ── Kakao Places 座標解析（韓文名 → 精確座標）─────────
+const KAKAO_CACHE_KEY = 'kakao_places_cache_v1';
+const BUSAN_CENTER = { lat: 35.18, lng: 129.07 }; // 釜山中心
+const BUSAN_RADIUS = 30000; // 30km 內
+
+function loadKakaoCache() {
+  try { return JSON.parse(localStorage.getItem(KAKAO_CACHE_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function saveKakaoCache(cache) {
+  try { localStorage.setItem(KAKAO_CACHE_KEY, JSON.stringify(cache)); } catch {}
+}
+
+function refineSpotsWithKakaoPlaces(itinerary) {
+  if (!window.kakao || !kakao.maps.services) return Promise.resolve();
+  const ps = new kakao.maps.services.Places();
+  const cache = loadKakaoCache();
+  const center = new kakao.maps.LatLng(BUSAN_CENTER.lat, BUSAN_CENTER.lng);
+  const tasks = [];
+
+  itinerary.forEach(day => {
+    day.spots.forEach(spot => {
+      const query = spot.nameKr || spot.name;
+      if (!query) return;
+
+      // 快取命中
+      if (cache[query]) {
+        spot.lat = cache[query].lat;
+        spot.lng = cache[query].lng;
+        spot.kakaoPlaceId = cache[query].id;
+        return;
+      }
+
+      tasks.push(new Promise(resolve => {
+        ps.keywordSearch(query, (data, status) => {
+          if (status === kakao.maps.services.Status.OK && data.length > 0) {
+            // 已用 location + radius 偏向釜山，直接取第一筆（相關性最高）
+            const best = data[0];
+            spot.lat = parseFloat(best.y);
+            spot.lng = parseFloat(best.x);
+            spot.kakaoPlaceId = best.id;
+            cache[query] = { lat: spot.lat, lng: spot.lng, id: best.id };
+          } else {
+            console.warn(`Kakao Places 找不到：${query}`);
+          }
+          resolve();
+        }, { location: center, radius: BUSAN_RADIUS, size: 5 });
+      }));
+    });
+  });
+
+  return Promise.all(tasks).then(() => saveKakaoCache(cache));
 }
 
 function showKakaoPopup(map, latlng, html) {
@@ -331,7 +385,7 @@ function initOverviewMap() {
   });
 
   addHotelMarker(overviewMap, HOTEL.lat, HOTEL.lng,
-    `<a class="popup-name popup-link" href="${kakaoMapLink(HOTEL.nameKr || HOTEL.name, HOTEL.lat, HOTEL.lng)}" target="_blank" rel="noopener">🏨 ${HOTEL.name} ↗</a>
+    `<a class="popup-name popup-link" href="${kakaoMapLink(HOTEL)}" target="_blank" rel="noopener">🏨 ${HOTEL.name} ↗</a>
 <div class="popup-kr">${HOTEL.nameKr}</div>
 <div class="popup-desc">點擊名稱可在 Kakao Map 開啟地點</div>`);
 
@@ -729,7 +783,6 @@ async function syncDayToSheet(spots) {
     name:     spot.name || '',
     nameKr:   spot.nameKr || '',
     desc:     spot.desc || '',
-    mapUrl:   spot.mapUrl || '',
     food:     spot.budget.food,
     ticket:   spot.budget.ticket,
     shopping: spot.budget.shopping
@@ -839,6 +892,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     await loadKakaoSdk();
+    await refineSpotsWithKakaoPlaces(ITINERARY);
   } catch (e) {
     console.error('Kakao Maps SDK 載入失敗：', e);
     const ov = document.getElementById('overview-map');
