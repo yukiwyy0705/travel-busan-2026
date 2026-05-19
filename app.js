@@ -249,7 +249,7 @@ function buildPopup(spot) {
 // ── Kakao Places 座標解析（韓文名 → 精確座標）─────────
 const KAKAO_CACHE_KEY = 'kakao_places_cache_v1';
 const BUSAN_CENTER = { lat: 35.18, lng: 129.07 }; // 釜山中心
-const BUSAN_RADIUS = 30000; // 30km 內
+const BUSAN_RADIUS = 20000; // Kakao 上限 20km
 
 function loadKakaoCache() {
   try { return JSON.parse(localStorage.getItem(KAKAO_CACHE_KEY) || '{}'); }
@@ -258,6 +258,34 @@ function loadKakaoCache() {
 
 function saveKakaoCache(cache) {
   try { localStorage.setItem(KAKAO_CACHE_KEY, JSON.stringify(cache)); } catch {}
+}
+
+// 移除韓文名稱結尾的「動作/餐別/場景」字眼，避免干擾 Kakao 搜尋
+function cleanQueryForKakao(name) {
+  if (!name) return '';
+  const noisePatterns = [
+    /\s*도착$/,               // 到達
+    /\s*출발$/,               // 出發
+    /\s*귀환$/,               // 返回
+    /\s*체크아웃$/,            // Check-out
+    /\s*체크인$/,              // Check-in
+    /\s*짐\s*수령$/,           // 取行李
+    /\s*물품보관함\s*수령$/,    // 取回寄存
+    /\s*물품보관함$/,          // 寄存櫃
+    /\s*수령$/,                // 取回
+    /\s*아침\s*산책$/,         // 早晨散步
+    /\s*아침식사$/,            // 早餐
+    /\s*아침$/,                // 早晨
+    /\s*점심$/,                // 午餐
+    /\s*저녁$/,                // 晚餐
+    /\s*식사$/,                // 用餐
+    /\s*기념품$/,              // 紀念品
+    /\s*야경$/,                // 夜景
+    /\s*산책$/                 // 散步
+  ];
+  let q = name;
+  noisePatterns.forEach(p => { q = q.replace(p, ''); });
+  return q.trim();
 }
 
 function refineSpotsWithKakaoPlaces(itinerary) {
@@ -269,10 +297,11 @@ function refineSpotsWithKakaoPlaces(itinerary) {
 
   itinerary.forEach(day => {
     day.spots.forEach(spot => {
-      const query = spot.nameKr || spot.name;
+      const rawName = spot.nameKr || spot.name;
+      const query = cleanQueryForKakao(rawName);
       if (!query) return;
 
-      // 快取命中
+      // 快取命中（以清理過的 query 為 key，多個變體共享同一筆結果）
       if (cache[query]) {
         spot.lat = cache[query].lat;
         spot.lng = cache[query].lng;
@@ -283,14 +312,13 @@ function refineSpotsWithKakaoPlaces(itinerary) {
       tasks.push(new Promise(resolve => {
         ps.keywordSearch(query, (data, status) => {
           if (status === kakao.maps.services.Status.OK && data.length > 0) {
-            // 已用 location + radius 偏向釜山，直接取第一筆（相關性最高）
             const best = data[0];
             spot.lat = parseFloat(best.y);
             spot.lng = parseFloat(best.x);
             spot.kakaoPlaceId = best.id;
             cache[query] = { lat: spot.lat, lng: spot.lng, id: best.id };
           } else {
-            console.warn(`Kakao Places 找不到：${query}`);
+            console.warn(`Kakao Places 找不到：${query}（原名：${rawName}）`);
           }
           resolve();
         }, { location: center, radius: BUSAN_RADIUS, size: 5 });
@@ -462,6 +490,7 @@ function renderDayCards() {
         ${formatKrw(dayTotal)} · HK$--
       </div>
       <div class="edit-btn-area" id="edit-btn-area-${day.day}">
+        <button class="add-btn" onclick="openAddSpotModal(${day.day})">➕ 新增</button>
         <button class="edit-btn" onclick="toggleDayEdit(${day.day})">✏️ 編輯</button>
       </div>`;
     card.appendChild(header);
@@ -545,7 +574,9 @@ function updateEditBtn(dayNum, isEditing) {
       <button class="edit-save-btn" onclick="applyAndSaveDayEdit(${dayNum})">✅ 確定</button>
       <button class="edit-cancel-btn" onclick="cancelDayEdit(${dayNum})">❌ 取消</button>`;
   } else {
-    area.innerHTML = `<button class="edit-btn" onclick="toggleDayEdit(${dayNum})">✏️ 編輯</button>`;
+    area.innerHTML = `
+      <button class="add-btn" onclick="openAddSpotModal(${dayNum})">➕ 新增</button>
+      <button class="edit-btn" onclick="toggleDayEdit(${dayNum})">✏️ 編輯</button>`;
   }
 }
 
@@ -554,7 +585,8 @@ function toggleDayEdit(dayNum) {
   if (!day) return;
   editStates[dayNum] = {
     active: true,
-    pendingSpots: day.spots.map(s => ({ ...s, budget: { ...s.budget } }))
+    pendingSpots: day.spots.map(s => ({ ...s, budget: { ...s.budget } })),
+    deletedRowIndices: []
   };
   renderTimelineForDay(dayNum, true);
   updateEditBtn(dayNum, true);
@@ -633,9 +665,9 @@ function renderTimelineEditContent(day, dayNum, timelineEl) {
       <div class="drag-handle" title="拖拉調換順序">⠿</div>
       <div class="timeline-dot">${SPOT_ICONS[spot.type] || '📍'}</div>
       <div class="timeline-content">
-        <div class="timeline-name">
-          <span class="spot-num" style="background:${day.color}">${si + 1}</span>
-          ${spot.name}
+        <div class="timeline-name edit-name-row">
+          <span><span class="spot-num" style="background:${day.color}">${si + 1}</span> ${spot.name}</span>
+          <button type="button" class="delete-spot-btn" title="刪除此地點">🗑️</button>
         </div>
         <div class="timeline-name-kr">${spot.nameKr}</div>
         <div class="edit-fields">
@@ -686,6 +718,10 @@ function renderTimelineEditContent(day, dayNum, timelineEl) {
       timelineEl.innerHTML = '';
       renderTimelineEditContent(day, dayNum, timelineEl);
     });
+    item.querySelector('.delete-spot-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      deleteSpotInEdit(dayNum, si, day, timelineEl);
+    });
     timelineEl.appendChild(item);
   });
 }
@@ -703,6 +739,30 @@ function collectEditValues(dayNum) {
     spot.budget.ticket   = parseInt(item.querySelector('.edit-ticket').value)   || 0;
     spot.budget.shopping = parseInt(item.querySelector('.edit-shopping').value) || 0;
   });
+}
+
+function deleteSpotInEdit(dayNum, si, day, timelineEl) {
+  const state = editStates[dayNum];
+  if (!state?.active) return;
+  collectEditValues(dayNum);
+  const [removed] = state.pendingSpots.splice(si, 1);
+  if (removed?.rowIndex) state.deletedRowIndices.push(removed.rowIndex);
+  timelineEl.innerHTML = '';
+  renderTimelineEditContent(day, dayNum, timelineEl);
+}
+
+async function deleteRowsFromSheet(rowIndices) {
+  if (!rowIndices.length || !APPS_SCRIPT_URL) return;
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify({ action: 'deleteRows', rows: rowIndices }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    });
+  } catch (err) {
+    console.error('deleteRows error:', err);
+  }
 }
 
 async function applyAndSaveDayEdit(dayNum) {
@@ -737,7 +797,9 @@ async function applyAndSaveDayEdit(dayNum) {
   }
 
   if (APPS_SCRIPT_URL) {
-    await syncDayToSheet(day.spots);
+    const deletedRows = state.deletedRowIndices || [];
+    await syncDayToSheet(day.spots, deletedRows);
+    if (deletedRows.length) await deleteRowsFromSheet(deletedRows);
   } else {
     showSyncToast('✅ 已更新（未設定 Apps Script，僅本地生效）');
   }
@@ -768,12 +830,12 @@ function updateDayBudgetTable(dayNum) {
   tbody.innerHTML = html;
 }
 
-async function syncDayToSheet(spots) {
+async function syncDayToSheet(spots, deletedRows = []) {
   if (!spots.length || spots.some(s => !s.rowIndex)) {
     showSyncToast('⚠️ 本地資料無法同步 Google Sheet');
     return;
   }
-  // 拿出當日所有「原始 Sheet 行號」並排序成固定的行槽
+  // 拿出當日剩餘（未刪除）「原始 Sheet 行號」並排序成固定的行槽
   const rowSlots = spots.map(s => s.rowIndex).sort((a, b) => a - b);
   // 將目前（可能已重新排序的）spot 順序寫入這些行槽
   const updates = spots.map((spot, i) => ({
@@ -788,11 +850,167 @@ async function syncDayToSheet(spots) {
     shopping: spot.budget.shopping
   }));
   try {
-    const url = `${APPS_SCRIPT_URL}?data=${encodeURIComponent(JSON.stringify({ updates }))}`;
-    await fetch(url, { mode: 'no-cors' });
-    showSyncToast('✅ 已同步至 Google Sheet');
-  } catch {
-    showSyncToast('❌ 同步失敗，請檢查網路連線');
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify({ action: 'update', updates }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    });
+    showSyncToast('✅ 已同步至 Google Sheet（請檢查表單）');
+  } catch (err) {
+    showSyncToast('❌ 同步失敗：' + err.message);
+    console.error('Sync error:', err);
+  }
+}
+
+// ── 新增地點 Modal ─────────────────────────────────────
+function openAddSpotModal(dayNum) {
+  const day = ITINERARY.find(d => d.day === dayNum);
+  if (!day) return;
+  closeAddSpotModal();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'add-spot-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h3>➕ 新增地點 — Day ${dayNum}・${day.dateLabel}</h3>
+        <button class="modal-close" type="button">×</button>
+      </div>
+      <form class="modal-form" id="add-spot-form">
+        <div class="form-row-2col">
+          <div class="form-row">
+            <label>⏰ 時間（必填）</label>
+            <input type="text" name="time" placeholder="例如 14:00" required>
+          </div>
+          <div class="form-row">
+            <label>🏷️ 類型</label>
+            <select name="typeZh" required>
+              <option value="交通">交通</option>
+              <option value="景點" selected>景點</option>
+              <option value="餐廳">餐廳</option>
+              <option value="咖啡廳">咖啡廳</option>
+              <option value="海灘">海灘</option>
+              <option value="酒店">酒店</option>
+              <option value="購物">購物</option>
+              <option value="區域">區域</option>
+              <option value="寺廟">寺廟</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>📍 地點名稱（必填）</label>
+          <input type="text" name="name" required>
+        </div>
+        <div class="form-row">
+          <label>🇰🇷 韓文名稱（用於地圖定位）</label>
+          <input type="text" name="nameKr" placeholder="例如 광안리해수욕장">
+        </div>
+        <div class="form-row">
+          <label>📝 描述</label>
+          <textarea name="desc" rows="3"></textarea>
+        </div>
+        <div class="form-costs-section">
+          <div class="form-costs-label">💰 費用明細（韓圜 ₩）</div>
+          <div class="form-costs">
+            <div class="form-cost">
+              <label>🍽️ 餐飲</label>
+              <input type="number" name="food" min="0" value="0" step="1000">
+            </div>
+            <div class="form-cost">
+              <label>🎫 門票</label>
+              <input type="number" name="ticket" min="0" value="0" step="1000">
+            </div>
+            <div class="form-cost">
+              <label>🛍️ 購物</label>
+              <input type="number" name="shopping" min="0" value="0" step="1000">
+            </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-cancel">取消</button>
+          <button type="submit" class="btn-submit">✅ 確定新增</button>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.modal-close').addEventListener('click', closeAddSpotModal);
+  overlay.querySelector('.btn-cancel').addEventListener('click', closeAddSpotModal);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeAddSpotModal(); });
+  overlay.querySelector('#add-spot-form').addEventListener('submit', e => {
+    e.preventDefault();
+    submitAddSpot(dayNum);
+  });
+  setTimeout(() => overlay.querySelector('input[name="time"]').focus(), 50);
+}
+
+function closeAddSpotModal() {
+  document.getElementById('add-spot-overlay')?.remove();
+}
+
+async function submitAddSpot(dayNum) {
+  const form = document.getElementById('add-spot-form');
+  if (!form) return;
+  const day = ITINERARY.find(d => d.day === dayNum);
+  if (!day) return;
+  const fd = new FormData(form);
+  const spot = {
+    time:     fd.get('time').trim(),
+    typeZh:   fd.get('typeZh'),
+    name:     fd.get('name').trim(),
+    nameKr:   fd.get('nameKr').trim(),
+    desc:     fd.get('desc').trim(),
+    food:     parseInt(fd.get('food'))     || 0,
+    ticket:   parseInt(fd.get('ticket'))   || 0,
+    shopping: parseInt(fd.get('shopping')) || 0
+  };
+  if (!spot.time || !spot.name) {
+    showSyncToast('⚠️ 時間 與 地點名稱 為必填');
+    return;
+  }
+  if (!APPS_SCRIPT_URL) {
+    showSyncToast('⚠️ 未設定 Apps Script URL');
+    return;
+  }
+  const submitBtn = form.querySelector('.btn-submit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = '寫入中...';
+
+  const payload = {
+    action:    'append',
+    day:       dayNum,
+    dateLabel: day.dateLabel,
+    theme:     day.theme,
+    spot
+  };
+
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    });
+    showSyncToast('✅ 已新增至 Google Sheet，正在重新載入...');
+    closeAddSpotModal();
+    // 等 Sheet 寫入完成後重新抓資料
+    setTimeout(async () => {
+      try {
+        const fresh = await fetchFromSheets();
+        if (fresh) {
+          ITINERARY.splice(0, ITINERARY.length, ...fresh);
+          await refineSpotsWithKakaoPlaces(ITINERARY);
+          renderAll();
+          showSyncToast('✅ 已重新整理');
+        }
+      } catch (e) {
+        showSyncToast('⚠️ 重新整理失敗，請手動 reload');
+      }
+    }, 2000);
+  } catch (err) {
+    showSyncToast('❌ 新增失敗：' + err.message);
+    submitBtn.disabled = false;
+    submitBtn.textContent = '確定新增';
   }
 }
 

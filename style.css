@@ -721,6 +721,32 @@ a.popup-link:hover {
 .drag-handle:hover { color: #999; }
 .drag-handle:active { cursor: grabbing; }
 
+/* 名稱列：左側文字 + 右側刪除鈕 */
+.edit-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.delete-spot-btn {
+  flex-shrink: 0;
+  background: none;
+  border: 1.5px solid #e74c3c;
+  color: #e74c3c;
+  border-radius: 6px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  line-height: 1.4;
+  opacity: 0.7;
+  transition: opacity 0.15s, background 0.15s;
+}
+.delete-spot-btn:hover {
+  opacity: 1;
+  background: #fdecea;
+}
+
 /* ── 編輯欄位 ── */
 .edit-fields {
   margin-top: 0.45rem;
@@ -825,3 +851,202 @@ a.popup-link:hover {
 }
 
 .sync-toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── 新增地點按鈕 ── */
+.add-btn {
+  background: rgba(255,255,255,0.18);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 6px;
+  padding: 0.28rem 0.65rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.add-btn:hover { background: rgba(255,255,255,0.32); }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  padding: 1rem;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  max-width: 480px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1.25rem;
+  background: var(--navy);
+  color: white;
+  border-radius: 12px 12px 0 0;
+}
+
+.modal-header h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.4rem;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.8;
+}
+.modal-close:hover { opacity: 1; }
+
+.modal-form {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.form-row label {
+  font-size: 0.75rem;
+  color: var(--gray);
+  font-weight: 500;
+}
+
+.form-row input,
+.form-row select,
+.form-row textarea {
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-row input:focus,
+.form-row select:focus,
+.form-row textarea:focus { border-color: var(--navy); }
+
+.form-row textarea { resize: vertical; line-height: 1.4; }
+
+/* 時間 + 類型 兩欄並排 */
+.form-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+/* 費用區塊 */
+.form-costs-section {
+  background: #f4f7fb;
+  border: 1.5px solid #d9e4f0;
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.form-costs-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--navy);
+  letter-spacing: 0.02em;
+}
+
+.form-costs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.form-cost {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.form-cost label {
+  font-size: 0.68rem;
+  color: var(--gray);
+  font-weight: 500;
+}
+
+.form-cost input {
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  padding: 0.38rem 0.5rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  background: white;
+  width: 100%;
+  text-align: right;
+}
+.form-cost input:focus { border-color: var(--navy); }
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.btn-cancel,
+.btn-submit {
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.btn-cancel {
+  background: var(--light);
+  color: var(--gray);
+  border: 1px solid var(--border);
+}
+.btn-cancel:hover { background: #e9ecef; }
+
+.btn-submit {
+  background: #27ae60;
+  color: white;
+}
+.btn-submit:hover { background: #1e8449; }
+.btn-submit:disabled { background: #95a5a6; cursor: not-allowed; }
