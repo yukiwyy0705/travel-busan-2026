@@ -202,13 +202,14 @@ async function fetchExchangeRate() {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
     document.getElementById('rate-display').textContent =
-      `KRW 1 = HKD ${(exchangeRate * 100).toFixed(4)} （更新：${updated}）`;
+      `₩100 = HK$${(exchangeRate * 100).toFixed(3)} （更新：${updated}）`;
     updateAllBudgets();
   } catch {
-    document.getElementById('rate-display').textContent = '匯率載入失敗，使用估算匯率';
+    document.getElementById('rate-display').textContent = '匯率載入失敗，使用估算匯率（₩100 ≈ HK$0.57）';
     exchangeRate = 0.0057;
     updateAllBudgets();
   }
+  updateCurrencyWidget();
 }
 
 function krwToHkd(krw) {
@@ -220,11 +221,15 @@ function formatKrw(krw) {
   return '₩' + krw.toLocaleString();
 }
 
-document.getElementById('krw-input').addEventListener('input', function () {
-  const val = parseFloat(this.value) || 0;
-  document.getElementById('hkd-output').textContent =
-    exchangeRate ? 'HK$' + (val * exchangeRate).toFixed(2) : '讀取中...';
-});
+function updateCurrencyWidget() {
+  const input = document.getElementById('krw-input');
+  const output = document.getElementById('hkd-output');
+  if (!input || !output) return;
+  const val = parseFloat(input.value) || 0;
+  output.textContent = exchangeRate ? 'HK$' + (val * exchangeRate).toFixed(2) : '--';
+}
+
+document.getElementById('krw-input').addEventListener('input', updateCurrencyWidget);
 
 // ── 地圖（Kakao Maps）──────────────────────────────────
 function buildCostBadges(spot) {
