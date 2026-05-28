@@ -412,21 +412,29 @@ function initOverviewMap() {
   const container = document.getElementById('overview-map');
   if (!container || !window.kakao || !kakao.maps || !kakao.maps.Map) return;
   container.innerHTML = '';
+  // 先以韓國中部作初始中心，稍後 setBounds 會自動調整以包含首爾及釜山
   overviewMap = new kakao.maps.Map(container, {
-    center: new kakao.maps.LatLng(35.12, 129.06),
-    level: 8
+    center: new kakao.maps.LatLng(36.5, 127.8),
+    level: 13
   });
+
+  const bounds = new kakao.maps.LatLngBounds();
 
   addHotelMarker(overviewMap, HOTEL.lat, HOTEL.lng,
     `<a class="popup-name popup-link" href="${kakaoMapLink(HOTEL)}" target="_blank" rel="noopener">🏨 ${HOTEL.name} ↗</a>
 <div class="popup-kr">${HOTEL.nameKr}</div>
 <div class="popup-desc">點擊名稱可在 Kakao Map 開啟地點</div>`);
+  bounds.extend(new kakao.maps.LatLng(HOTEL.lat, HOTEL.lng));
 
   ITINERARY.forEach(day => {
     day.spots.forEach((spot, i) => {
       addNumberedMarker(overviewMap, spot.lat, spot.lng, day.color, i + 1, 32, buildPopup(spot));
+      bounds.extend(new kakao.maps.LatLng(spot.lat, spot.lng));
     });
   });
+
+  // 自動縮放地圖以同時顯示首爾（Day 1）與釜山（Day 2–5）
+  overviewMap.setBounds(bounds);
 }
 
 function initDayMap(mapId, dayData) {

@@ -1,5 +1,5 @@
 const TRIP = {
-  outbound: { date: '2026-06-27', from: 'HKG', to: 'PUS', dep: '01:50', arr: '06:20' },
+  outbound: { date: '2026-06-27', from: 'HKG', to: 'ICN', arr: '01:35' },
   inbound:  { date: '2026-07-01', from: 'PUS', to: 'HKG', dep: '21:50', arr: '00:15+1' }
 };
 
@@ -11,38 +11,144 @@ const HOTEL = {
   url: 'https://maps.app.goo.gl/XyrVeutMmWcJLpSr8'
 };
 
+const HOTEL_INCHEON = {
+  name: '仁川 Sky Stay Hotel',
+  nameKr: '인천 스카이스테이 호텔',
+  lat: 37.4738,
+  lng: 126.4800
+};
+
 const ITINERARY = [
+  // ─────────────────────────────────────────────
+  // Day 1 · 6月27日 · 首爾
+  // ─────────────────────────────────────────────
   {
     day: 1,
     date: 'Day 1',
     dateLabel: '6月27日 (六)',
-    theme: '到達 · 松島 · 甘川',
+    theme: '仁川抵達 · 首爾半日 · KTX',
     color: '#e74c3c',
     spots: [
       {
-        time: '06:20',
+        time: '01:35',
         type: 'transport',
-        name: '金海國際機場抵達',
-        nameKr: '김해국제공항 도착',
-        desc: '由香港出發 (01:50)，抵達金海機場。乘搭 BGL 輕軌至沙上站寄存大件行李',
-        lat: 35.1795, lng: 128.9381,
-        budget: { transport: 8000, food: 0, ticket: 0, shopping: 0 }
+        name: '仁川國際機場抵達',
+        nameKr: '인천국제공항 도착',
+        desc: '由香港出發，深夜抵達仁川國際機場。辦理入境手續後乘的士前往機場附近酒店短暫休息',
+        lat: 37.4602, lng: 126.4407,
+        budget: { transport: 20000, food: 0, ticket: 0, shopping: 0 }
       },
       {
-        time: '07:15',
-        type: 'transport',
-        name: '沙上站 行李寄存',
-        nameKr: '사상역 물품보관함',
-        desc: '金海機場乘 BGL 輕軌（約 20 分鐘）抵沙上站，使用站內 coin locker 寄存大件行李（約 ₩4,000–6,000），輕裝直接出發遊覽',
-        lat: 35.1481, lng: 128.9918,
-        budget: { transport: 0, food: 0, ticket: 5000, shopping: 0 }
+        time: '02:30',
+        type: 'hotel',
+        name: '仁川 Sky Stay Hotel 入住',
+        nameKr: '인천 스카이스테이 호텔 체크인',
+        desc: '仁川機場附近酒店，短暫休息至早上 11:00 退房',
+        lat: HOTEL_INCHEON.lat, lng: HOTEL_INCHEON.lng,
+        budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
       },
+      {
+        time: '11:00',
+        type: 'hotel',
+        name: '仁川 Sky Stay Hotel 退房',
+        nameKr: '인천 스카이스테이 호텔 체크아웃',
+        desc: '11:00 前完成退房，步行至 AREX 仁川機場站，準備進入首爾市區',
+        lat: HOTEL_INCHEON.lat, lng: HOTEL_INCHEON.lng,
+        budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
+      },
+      {
+        time: '12:00',
+        type: 'transport',
+        name: 'AREX 機鐵 · 仁川→首爾',
+        nameKr: 'AREX 공항철도 직통열차',
+        desc: '乘搭 AREX 直達列車（約 43 分鐘）前往首爾站，車費約 ₩9,500',
+        lat: 37.5547, lng: 126.9706,
+        budget: { transport: 9500, food: 0, ticket: 0, shopping: 0 }
+      },
+      {
+        time: '13:30',
+        type: 'food',
+        name: '明洞午餐',
+        nameKr: '명동 점심',
+        desc: '首爾最熱鬧商業街，街頭小食豐富（炸雞、海鮮煎餅、起司年糕），感受首爾市場活力',
+        lat: 37.5636, lng: 126.9869,
+        budget: { transport: 0, food: 15000, ticket: 0, shopping: 0 }
+      },
+      {
+        time: '15:00',
+        type: 'attraction',
+        name: '景福宮',
+        nameKr: '경복궁',
+        desc: '朝鮮王朝最大皇宮，可穿韓服入場拍照，門票 ₩3,000；附近有光化門廣場及北村韓屋村',
+        lat: 37.5796, lng: 126.9770,
+        budget: { transport: 0, food: 0, ticket: 3000, shopping: 0 }
+      },
+      {
+        time: '17:00',
+        type: 'area',
+        name: '弘大商圈',
+        nameKr: '홍대',
+        desc: '首爾年輕潮流聖地，街頭表演、個性小店、韓系美妝一條龍，感受首爾最真實的活力',
+        lat: 37.5563, lng: 126.9241,
+        budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
+      },
+      {
+        time: '19:00',
+        type: 'transport',
+        name: '首爾站 KTX 出發 → 釜山',
+        nameKr: '서울역 KTX 부산행 출발',
+        desc: 'KTX 高鐵由首爾站出發，全程約 2 小時 30 分鐘抵達釜山站，車費約 ₩59,800',
+        lat: 37.5547, lng: 126.9706,
+        budget: { transport: 59800, food: 0, ticket: 0, shopping: 0 }
+      },
+      {
+        time: '21:30',
+        type: 'transport',
+        name: '釜山站抵達',
+        nameKr: '부산역 도착',
+        desc: 'KTX 抵達釜山站，乘搭 Uber 或地鐵前往松島酒店辦理入住',
+        lat: 35.1152, lng: 129.0390,
+        budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
+      },
+      {
+        time: '22:15',
+        type: 'hotel',
+        name: 'Elmomento Songdo Check-in',
+        nameKr: '엘모멘토 송도 체크인',
+        desc: '抵達松島酒店辦理入住，結束首日行程，明天開始正式遊覽釜山',
+        lat: HOTEL.lat, lng: HOTEL.lng,
+        budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
+      }
+    ],
+    hotel: HOTEL,
+    summary: { transport: 89300, food: 15000, ticket: 3000, shopping: 0, hotel: 100000 }
+  },
+
+  // ─────────────────────────────────────────────
+  // Day 2 · 6月28日 · 釜山（松島 + 甘川）
+  // ─────────────────────────────────────────────
+  {
+    day: 2,
+    date: 'Day 2',
+    dateLabel: '6月28日 (日)',
+    theme: '松島 · 甘川 · 扎嘎其',
+    color: '#3498db',
+    spots: [
       {
         time: '08:30',
+        type: 'hotel',
+        name: 'Elmomento Songdo 出發',
+        nameKr: '엘모멘토 송도 출발',
+        desc: '由松島酒店出發，開始第一個完整釜山遊覽日',
+        lat: HOTEL.lat, lng: HOTEL.lng,
+        budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
+      },
+      {
+        time: '09:00',
         type: 'food',
         name: '水邊最高 豬肉湯飯',
         nameKr: '수변최고 돼지국밥',
-        desc: '沙上站附近 24 小時營業的人氣豬肉湯飯，濃郁清甜湯底配白飯，第一餐暖胃之選',
+        desc: '沙上站附近 24 小時營業人氣豬肉湯飯，濃郁清甜湯底配白飯，釜山式早餐首選',
         lat: 35.1455, lng: 128.9902,
         budget: { transport: 0, food: 8000, ticket: 0, shopping: 0 }
       },
@@ -87,38 +193,33 @@ const ITINERARY = [
         type: 'food',
         name: '扎嘎其市場 晚餐',
         nameKr: '자갈치시장',
-        desc: '韓國最大水產市場，即買即食新鮮海鮮，炸物一條街熱鬧非凡，第一晚必到',
+        desc: '韓國最大水產市場，即買即食新鮮海鮮，炸物一條街熱鬧非凡，釜山第一晚必到',
         lat: 35.0973, lng: 129.0246,
         budget: { transport: 0, food: 20000, ticket: 0, shopping: 0 }
       },
       {
         time: '20:30',
-        type: 'transport',
-        name: '沙上站 取回行李',
-        nameKr: '사상역 물품보관함 수령',
-        desc: '由扎嘎其市場乘地鐵至沙上站（사상역），取回早上寄存的大件行李',
-        lat: 35.1481, lng: 128.9918,
-        budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
-      },
-      {
-        time: '21:30',
         type: 'hotel',
         name: 'Elmomento Songdo 返回酒店',
         nameKr: '엘모멘토 송도 귀환',
-        desc: '攜行李搭乘 Uber 返回松島酒店，結束第一天行程',
+        desc: '由扎嘎其市場乘搭 Uber 返回松島酒店，結束釜山第一天行程',
         lat: HOTEL.lat, lng: HOTEL.lng,
         budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
       }
     ],
     hotel: HOTEL,
-    summary: { transport: 0, food: 48000, ticket: 22000, shopping: 10000, hotel: 234863 }
+    summary: { transport: 0, food: 48000, ticket: 17000, shopping: 10000, hotel: 234863 }
   },
+
+  // ─────────────────────────────────────────────
+  // Day 3 · 6月29日 · 釜山（南浦洞 + 影島 + 廣安里）
+  // ─────────────────────────────────────────────
   {
-    day: 2,
-    date: 'Day 2',
-    dateLabel: '6月28日 (日)',
+    day: 3,
+    date: 'Day 3',
+    dateLabel: '6月29日 (一)',
     theme: '南浦洞 · 影島 · 廣安里',
-    color: '#3498db',
+    color: '#2ecc71',
     spots: [
       {
         time: '08:00',
@@ -188,7 +289,7 @@ const ITINERARY = [
         type: 'beach',
         name: '廣安里海水浴場',
         nameKr: '광안리해수욕장',
-        desc: '廣安大橋正對面的美麗海灘，傍晚散步吹海風，等待橋燈亮起的黃金時刻',
+        desc: '廣안大橋正對面的美麗海灘，傍晚散步吹海風，等待橋燈亮起的黃金時刻',
         lat: 35.1531, lng: 129.1186,
         budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
       },
@@ -197,16 +298,16 @@ const ITINERARY = [
         type: 'food',
         name: 'Nasari食堂 晚餐',
         nameKr: '나사리식당',
-        desc: '廣安里人氣食堂，以韓式家庭料理著稱，새우장（醬油蝦）及各式小菜豐富，地鐵廣안站步行 13 分',
+        desc: '廣안里人氣食堂，以韓式家庭料理著稱，새우장（醬油蝦）及各式小菜豐富，地鐵廣안站步行 13 分',
         lat: 35.1529, lng: 129.1193,
         budget: { transport: 0, food: 25000, ticket: 0, shopping: 0 }
       },
       {
         time: '21:00',
         type: 'attraction',
-        name: '廣安大橋夜景',
+        name: '廣안大橋夜景',
         nameKr: '광안대교 야경',
-        desc: '釜山最上鏡夜景地標，廣安大橋 LED 燈光倒映海面，從海灘漫步欣賞即可',
+        desc: '釜山最上鏡夜景地標，廣안大橋 LED 燈光倒映海面，從海灘漫步欣賞即可',
         lat: 35.1430, lng: 129.1085,
         budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
       },
@@ -215,7 +316,7 @@ const ITINERARY = [
         type: 'hotel',
         name: 'Elmomento Songdo 返回酒店',
         nameKr: '엘모멘토 송도 귀환',
-        desc: '搭乘 Uber 由廣安里返回松島酒店，結束充實的第二天行程',
+        desc: '搭乘 Uber 由廣안里返回松島酒店，結束充實的第三天行程',
         lat: HOTEL.lat, lng: HOTEL.lng,
         budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
       }
@@ -223,12 +324,16 @@ const ITINERARY = [
     hotel: HOTEL,
     summary: { transport: 0, food: 61000, ticket: 12000, shopping: 0, hotel: 234863 }
   },
+
+  // ─────────────────────────────────────────────
+  // Day 4 · 6月30日 · 釜山（海雲台 + 松亭）
+  // ─────────────────────────────────────────────
   {
-    day: 3,
-    date: 'Day 3',
-    dateLabel: '6月29日 (一)',
+    day: 4,
+    date: 'Day 4',
+    dateLabel: '6月30日 (二)',
     theme: '海雲台 · 松亭 · 5大必食日',
-    color: '#2ecc71',
+    color: '#9b59b6',
     spots: [
       {
         time: '07:30',
@@ -315,98 +420,10 @@ const ITINERARY = [
     hotel: HOTEL,
     summary: { transport: 0, food: 103000, ticket: 18000, shopping: 0, hotel: 234863 }
   },
-  {
-    day: 4,
-    date: 'Day 4',
-    dateLabel: '6月30日 (二)',
-    theme: '廣安里 · 機張 · 西面',
-    color: '#9b59b6',
-    spots: [
-      {
-        time: '08:00',
-        type: 'hotel',
-        name: 'Elmomento Songdo 出發',
-        nameKr: '엘모멘토 송도 출발',
-        desc: '由松島酒店出發，前往廣安里享用早餐',
-        lat: HOTEL.lat, lng: HOTEL.lng,
-        budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
-      },
-      {
-        time: '09:00',
-        type: 'cafe',
-        name: 'Working Holiday 早餐',
-        nameKr: '워킹홀리데이',
-        desc: '廣安里人氣咖啡廳，09:00 開門，提供精緻早餐套餐及特調咖啡，悠閒開展新的一天',
-        lat: 35.1535, lng: 129.1175,
-        budget: { transport: 0, food: 8000, ticket: 0, shopping: 0 }
-      },
-      {
-        time: '09:45',
-        type: 'beach',
-        name: '廣安里海水浴場 晨間散步',
-        nameKr: '광안리해수욕장 아침 산책',
-        desc: '早晨的廣安里沙灘人少清靜，廣안大橋倒映於平靜海面，是一天最美的時刻',
-        lat: 35.1531, lng: 129.1186,
-        budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
-      },
-      {
-        time: '12:00',
-        type: 'food',
-        name: '機張市場 醬蟹 午餐',
-        nameKr: '기장시장 간장게장',
-        desc: '釜山必食「醬油醃蟹（간장게장）」，有「白飯小偷」之稱，鮮甜蟹肉配熱飯絕配，機張市場一帶多家名店',
-        lat: 35.2448, lng: 129.2124,
-        budget: { transport: 0, food: 40000, ticket: 0, shopping: 0 }
-      },
-      {
-        time: '14:00',
-        type: 'attraction',
-        name: 'Skyline Luge 斜坡滑車',
-        nameKr: '스카이라인 루지',
-        desc: '刺激好玩的滑道滑車，沿山坡俯衝而下，全程海景相伴，機張海岸人氣體驗項目，約 ₩16,000',
-        lat: 35.2492, lng: 129.2301,
-        budget: { transport: 0, food: 0, ticket: 16000, shopping: 0 }
-      },
-      {
-        time: '16:30',
-        type: 'cafe',
-        name: '田浦咖啡街 下午茶',
-        nameKr: '전포카페거리',
-        desc: '充滿個性咖啡廳的特色街道，各式網紅打卡咖啡廳林立，下午茶必到',
-        lat: 35.1547, lng: 129.0597,
-        budget: { transport: 0, food: 8000, ticket: 0, shopping: 0 }
-      },
-      {
-        time: '18:30',
-        type: 'area',
-        name: '西面商圈',
-        nameKr: '서면',
-        desc: '釜山最繁華地下商圈，韓系服飾、美妝、小食一次滿足，西面地下街延伸數百公尺',
-        lat: 35.1579, lng: 129.0596,
-        budget: { transport: 0, food: 0, ticket: 0, shopping: 20000 }
-      },
-      {
-        time: '20:00',
-        type: 'food',
-        name: '山莊1988 晚餐',
-        nameKr: '산장1988 서면본점',
-        desc: '西面人氣韓式烤肉店，以特製秘製豬頸肉及各式燒烤聞名，西面站 6 號出口步行 3 分，17:00 開門',
-        lat: 35.1577, lng: 129.0593,
-        budget: { transport: 0, food: 35000, ticket: 0, shopping: 0 }
-      },
-      {
-        time: '22:00',
-        type: 'hotel',
-        name: 'Elmomento Songdo 返回酒店',
-        nameKr: '엘모멘토 송도 귀환',
-        desc: '搭乘 Uber 由西面返回松島酒店，最後一晚好好休息',
-        lat: HOTEL.lat, lng: HOTEL.lng,
-        budget: { transport: 0, food: 0, ticket: 0, shopping: 0 }
-      }
-    ],
-    hotel: HOTEL,
-    summary: { transport: 0, food: 91000, ticket: 16000, shopping: 20000, hotel: 234863 }
-  },
+
+  // ─────────────────────────────────────────────
+  // Day 5 · 7月1日 · 釜山（手信採購 + 歸港）
+  // ─────────────────────────────────────────────
   {
     day: 5,
     date: 'Day 5',
