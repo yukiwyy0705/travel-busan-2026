@@ -495,12 +495,12 @@ function renderDayCards() {
     header.style.background = day.color;
     header.innerHTML = `
       <div class="day-badge">${day.date}</div>
-      <div>
+      <div class="day-info">
         <div class="day-theme">${day.theme}</div>
-        <div style="font-size:0.75rem;opacity:0.8;margin-top:2px">${day.dateLabel}</div>
+        <div class="day-date-label">${day.dateLabel}</div>
       </div>
       <div class="day-budget-preview" id="day-preview-${day.day}">
-        ${formatKrw(dayTotal)} · HK$--
+        ${formatKrw(dayTotal)} · ${krwToHkd(dayTotal)}
       </div>
       <div class="edit-btn-area" id="edit-btn-area-${day.day}">
         <button class="add-btn" onclick="openAddSpotModal(${day.day})">➕ 新增</button>

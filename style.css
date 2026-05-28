@@ -249,15 +249,79 @@ nav a:hover, nav a.active { color: white; background: rgba(255,255,255,0.15); }
   padding: 0.2rem 0.6rem;
   min-width: 70px;
   text-align: center;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+/* 主題 + 日期 wrapper */
+.day-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .day-theme { font-size: 1.1rem; font-weight: 600; }
-.day-budget-preview { margin-left: auto; font-size: 0.85rem; opacity: 0.9; }
+
+.day-date-label { font-size: 0.75rem; opacity: 0.8; margin-top: 2px; }
+
+.day-budget-preview {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 
 .day-body { display: grid; grid-template-columns: 1fr 1fr; }
 
 @media (max-width: 640px) {
   .day-body { grid-template-columns: 1fr; }
+
+  /* ── Day Header 手機佈局 ── */
+  .day-header {
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+    row-gap: 0.35rem;
+    column-gap: 0.55rem;
+    align-items: center;
+  }
+
+  /* Day badge 縮小 */
+  .day-badge {
+    font-size: 1.15rem;
+    min-width: 56px;
+    padding: 0.12rem 0.45rem;
+  }
+
+  /* 主題文字：截斷防止換行 */
+  .day-theme {
+    font-size: 0.88rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .day-date-label { font-size: 0.68rem; }
+
+  /* 編輯按鈕移至右側（同一行） */
+  .edit-btn-area {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  /* 預算移至下一行，縮排與主題對齊 */
+  .day-budget-preview {
+    order: 10;
+    flex-basis: 100%;
+    white-space: normal;
+    font-size: 0.78rem;
+    opacity: 0.85;
+    padding-left: calc(56px + 0.55rem);
+  }
+
+  /* 編輯/新增按鈕縮小 */
+  .edit-btn, .add-btn {
+    font-size: 0.72rem;
+    padding: 0.22rem 0.5rem;
+  }
 }
 
 /* ── TIMELINE ── */
@@ -482,10 +546,64 @@ footer {
 
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
-  nav a:not(.brand) { display: none; }
-  .hero { padding: 2.5rem 1rem 2rem; }
-  .hero-stats { gap: 0.6rem; }
-  .stat-card { padding: 0.6rem 1rem; }
+  /* Nav：改為橫向可捲動 */
+  nav {
+    padding: 0 0.75rem;
+    gap: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  nav .brand { font-size: 0.85rem; margin-right: 0.5rem; white-space: nowrap; flex-shrink: 0; }
+  nav a {
+    display: block; /* 全部顯示 */
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .data-badge { font-size: 0.58rem; padding: 2px 7px; flex-shrink: 0; }
+
+  /* Hero */
+  .hero { padding: 2rem 1rem 1.75rem; }
+  .hero-flag { font-size: 2.5rem; }
+  .hero h1 { font-size: clamp(1.4rem, 5vw, 2rem); }
+  .hero .subtitle { font-size: 0.85rem; }
+  .hero-stats { gap: 0.5rem; }
+  .stat-card { padding: 0.5rem 0.85rem; }
+  .stat-card .val { font-size: 1.1rem; }
+  .stat-card .lbl { font-size: 0.68rem; }
+
+  /* Section */
+  .section { padding: 1.5rem 0.85rem; }
+
+  /* Timeline */
+  .timeline { padding: 1rem; }
+  .timeline-item { gap: 0.75rem; padding-bottom: 1rem; }
+  .timeline-item::before { left: 15px; }
+  .timeline-dot { width: 32px; height: 32px; font-size: 0.9rem; }
+  .timeline-desc { font-size: 0.78rem; }
+  .transport-leg { padding-left: 44px; }
+
+  /* Day map */
+  .day-map-wrap { padding: 0.85rem; gap: 0.5rem; }
+  .day-map { height: 200px; }
+
+  /* Budget table */
+  .budget-table { font-size: 0.75rem; }
+  .budget-table th, .budget-table td { padding: 0.25rem 0.35rem; }
+
+  /* Total budget */
+  .budget-summary-body { padding: 1rem; }
+  .summary-grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.65rem; }
+  .summary-cat { padding: 0.75rem; }
+  .summary-cat .cat-icon { font-size: 1.2rem; }
+  .grand-total { padding: 1rem 1.25rem; }
+  .grand-total .amount-hkd { font-size: 1.3rem; }
+
+  /* Currency widget */
+  .currency-widget { padding: 1rem; }
 }
 
 /* ── TRANSPORT LEGS ── */
